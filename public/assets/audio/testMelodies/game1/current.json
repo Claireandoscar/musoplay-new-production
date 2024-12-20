@@ -1,9 +1,0 @@
-{
-  "melodyParts": [
-    "/assets/audio/testMelodies/game1/bar1n1n2n3n4.mp3",
-    "/assets/audio/testMelodies/game1/bar2n5n4n3n2.mp3",
-    "/assets/audio/testMelodies/game1/bar3n3n4n5n4.mp3",
-    "/assets/audio/testMelodies/game1/bar4n3n2n1n1.mp3"
-  ],
-  "fullTune": "/assets/audio/testMelodies/game1/test1tune.mp3"
-}

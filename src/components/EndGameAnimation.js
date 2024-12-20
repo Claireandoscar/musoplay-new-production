@@ -1,48 +1,12 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import './EndGameAnimation.css';
 
-const EndGameAnimation = ({ score, barHearts, onNext, currentGameNumber }) => {
+const EndGameAnimation = ({ score, barHearts }) => {
   const [animationStage, setAnimationStage] = useState(0);
   const [showText, setShowText] = useState(false);
   const [typedText, setTypedText] = useState('');
   
-  const handleNextClick = () => {
-    if (currentGameNumber === 3) {
-      window.location.href = "https://www.surveymonkey.com/r/musoplaysurvey1";
-    } else {
-      onNext();
-    }
-  };
-
-  // Combined message and styling information
-  const getGameMessage = useCallback(() => {
-    switch(currentGameNumber) {
-      case 1:
-        return {
-          text: "WELL DONE\nNOW FOR SOMETHING TRICKIER!",
-          color: "#FF8A20",
-          nextButton: "/assets/images/ui/next-orange.svg"
-        };
-      case 2:
-        return {
-          text: "WARNING!\nEXTRA HARD CHALLENGE AHEAD",
-          color: "#FF2376",
-          nextButton: "/assets/images/ui/next-pink.svg"
-        };
-      case 3:
-        return {
-          text: "THANK YOU FOR YOUR TIME!\nPRESS NEXT TO ACCESS THE SURVEY",
-          color: "#00C22D",
-          nextButton: "/assets/images/ui/next.svg"
-        };
-      default:
-        return {
-          text: "well done!",
-          color: "#FFFFFF",
-          nextButton: "/assets/images/ui/next.svg"
-        };
-    }
-  }, [currentGameNumber]);
+  const message = "WELL DONE!\nCOME BACK TOMORROW FOR A NEW CHALLENGE";
 
   const getScoringPhrase = (score) => {
     if (score === 16) return "Legendary";
@@ -57,14 +21,13 @@ const EndGameAnimation = ({ score, barHearts, onNext, currentGameNumber }) => {
   };
 
   useEffect(() => {
-    const message = getGameMessage().text;
     if (showText && typedText.length < message.length) {
       const timer = setTimeout(() => {
         setTypedText(message.slice(0, typedText.length + 1));
       }, 50);
       return () => clearTimeout(timer);
     }
-  }, [showText, typedText, getGameMessage]);
+  }, [showText, typedText]);
 
   useEffect(() => {
     const heartAnimationDuration = 300;
@@ -82,8 +45,6 @@ const EndGameAnimation = ({ score, barHearts, onNext, currentGameNumber }) => {
       clearTimeout(timer);
     };
   }, [animationStage]);
-
-  const currentGameStyle = getGameMessage();
 
   return (
     <div className="end-game-animation">
@@ -114,19 +75,12 @@ const EndGameAnimation = ({ score, barHearts, onNext, currentGameNumber }) => {
           <>
             <div 
               className="typed-message"
-              style={{ color: currentGameStyle.color }}
+              style={{ color: "#00C22D" }}
             >
               {typedText.split('\n').map((line, index) => (
                 <p key={index}>{line}</p>
               ))}
             </div>
-            <img 
-              src={currentGameStyle.nextButton}
-              alt="Next" 
-              className="end-animation-next-button"
-              onClick={handleNextClick}
-              style={{ cursor: 'pointer' }}
-            />
             <img 
               src={process.env.PUBLIC_URL + '/assets/images/ui/logo.svg'} 
               alt="Musoplay" 

@@ -7,7 +7,6 @@ import Controls from './components/Controls';
 import VirtualInstrument from './components/VirtualInstrument';
 import ProgressBar from './components/ProgressBar';
 import EndGameAnimation from './components/EndGameAnimation';
-import StartScreen from './components/StartScreen';
 import LogRocket from 'logrocket';
 import { trackEvent } from './services/analytics';
 
@@ -108,16 +107,12 @@ function App() {
   const [melodyAudio, setMelodyAudio] = useState(null);
   const [fullTuneMelodyAudio, setFullTuneMelodyAudio] = useState(null);
   const [isAudioLoaded, setIsAudioLoaded] = useState(false);
-
   // Game state and progress
-  const [showStartScreen, setShowStartScreen] = useState(true);
   const [gameMode, setGameMode] = useState('initial');
   const [score, setScore] = useState(0);
   const [currentBarIndex, setCurrentBarIndex] = useState(0);
-  const [currentGameNumber, setCurrentGameNumber] = useState(1);
-  const [showInstructions, setShowInstructions] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(true);
 
-  
   // Sequence and completion tracking
   const [correctSequence, setCorrectSequence] = useState([]);
   const [isGameComplete, setIsGameComplete] = useState(false);
@@ -125,7 +120,6 @@ function App() {
   const [showEndAnimation, setShowEndAnimation] = useState(false);
   const [isListenPracticeMode, setIsListenPracticeMode] = useState(false);
   const [showFirstNoteHint, setShowFirstNoteHint] = useState(false);
-
   const notes = [
     { id: 1, color: 'red', noteNumber: 1 },
     { id: 2, color: 'orange', noteNumber: 2 },
@@ -137,6 +131,30 @@ function App() {
     { id: 8, color: 'red', noteNumber: 8 },
   ];
 
+  const handleStartGame = () => {   
+    console.log('handleStartGame called');
+    trackEvent('game_started');     
+    if (!isPreloading && isAudioLoaded) {
+      console.log('Conditions passed, starting game');
+      setShowInstructions(false);
+      setGameMode('initial');
+        
+      dispatch({ type: 'SET_GAME_PHASE', payload: 'initial' });
+      dispatch({ type: 'UPDATE_NOTE_INDEX', payload: 0 });
+      dispatch({ type: 'RESET_BAR_HEARTS' });
+      dispatch({ type: 'RESET_COMPLETED_BARS' });
+      dispatch({ type: 'SET_BAR_FAILING', failing: false });
+        
+      setScore(0);
+      setCurrentBarIndex(0);
+      setIsGameComplete(false);
+      setIsGameEnded(false);
+      setShowEndAnimation(false);
+      setIsListenPracticeMode(false);
+    } else {
+      console.log('Game not starting because:', { isPreloading, isAudioLoaded });
+    }
+  };
   // Define loadAudio callback - combined version
   const loadAudio = useCallback(async (barIndex) => {
     console.log('LoadAudio called with barIndex:', barIndex);
@@ -152,8 +170,8 @@ function App() {
         const audioPath = audioFiles[barIndex];
         console.log('Loading audio from path:', audioPath);
         
-        // Pass currentGameNumber here
-        await audioEngine.loadSound(audioPath, `melody${barIndex}`, currentGameNumber);
+        // Removed currentGameNumber parameter
+        await audioEngine.loadSound(audioPath, `melody${barIndex}`);
         
         // Create Audio object
         const audio = new Audio(audioPath);
@@ -168,56 +186,7 @@ function App() {
         setIsAudioLoaded(false);
         return null;
     }
-}, [audioFiles, currentGameNumber]); // Add currentGameNumber to dependencies
-
-useEffect(() => {
-  const loadAllSounds = async () => {
-      console.log('Starting loadAllSounds...');
-      console.log('Current audioFiles:', audioFiles);
-      try {
-          // Make sure audio engine is initialized
-          const initResult = await audioEngine.init();
-          console.log('Audio engine init result:', initResult);
-          
-          // Load all piano notes (1-8)
-          console.log('Loading piano notes...');
-          for (let i = 1; i <= 8; i++) {
-              await audioEngine.loadSound(`/assets/audio/n${i}.mp3`, `n${i}`);
-              console.log(`Loaded note ${i}`);
-          }
-          
-          // Load all UI sounds
-          console.log('Loading UI sounds...');
-          await audioEngine.loadSound('/assets/audio/ui-sounds/wrong-note.mp3', 'wrong');
-          await audioEngine.loadSound('/assets/audio/ui-sounds/bar-failed.mp3', 'fail');
-          await audioEngine.loadSound('/assets/audio/ui-sounds/bar-complete.mp3', 'complete');
-          await audioEngine.loadSound('/assets/audio/ui-sounds/note-flip.mp3', 'flip');
-          console.log('UI sounds loaded');
-
-          // If we have melody files, preload them
-          if (audioFiles.length > 0) {
-              console.log('Starting melody preload...');
-              for (let i = 0; i < audioFiles.length; i++) {
-                  const audioPath = audioFiles[i];
-                  console.log(`Loading melody ${i} from ${audioPath}`);
-                  await audioEngine.loadSound(audioPath, `melody${i}`);
-                  console.log(`Preloaded melody ${i}`);
-              }
-              console.log('Setting isAudioLoaded to true');
-              setIsAudioLoaded(true);
-          } else {
-              console.log('No audio files to preload');
-          }
-          
-          console.log('All sounds loaded successfully');
-      } catch (error) {
-          console.error('Failed to load sounds:', error, error.stack);
-          setIsAudioLoaded(false);
-      }
-  };
-
-  loadAllSounds();
-}, [audioFiles]);
+}, [audioFiles]); // Removed currentGameNumber from dependencies
 
 useEffect(() => {
   console.log('Audio initialization effect running');
@@ -229,29 +198,6 @@ useEffect(() => {
           const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
           console.log('Platform:', isIOS ? 'iOS' : 'Android/Other');
 
-          // Handle user interaction requirement
-          const hasInteracted = await new Promise(resolve => {
-              const handleInteraction = () => {
-                  console.log('User interaction detected');
-                  document.removeEventListener('touchstart', handleInteraction);
-                  document.removeEventListener('mousedown', handleInteraction);
-                  resolve(true);
-              };
-              
-              document.addEventListener('touchstart', handleInteraction, { passive: false });
-              document.addEventListener('mousedown', handleInteraction);
-              
-              if (document.documentElement.dataset.hasInteracted === 'true') {
-                  console.log('Previous interaction detected');
-                  resolve(true);
-              }
-          });
-
-          if (!hasInteracted && !isIOS) {
-              console.log('Waiting for user interaction (Android requirement)');
-              return;
-          }
-
           if (audioFiles.length > 0) {
               console.log(`Found ${audioFiles.length} audio files`);
               setIsPreloading(true);
@@ -261,6 +207,19 @@ useEffect(() => {
 
               if (success) {
                   try {
+                      // Load all piano notes (1-8) first
+                      console.log('Loading piano notes...');
+                      for (let i = 1; i <= 8; i++) {
+                          await audioEngine.loadSound(`/assets/audio/n${i}.mp3`, `n${i}`);
+                      }
+
+                      // Then load UI sounds
+                      console.log('Loading UI sounds...');
+                      await audioEngine.loadSound('/assets/audio/ui-sounds/wrong-note.mp3', 'wrong');
+                      await audioEngine.loadSound('/assets/audio/ui-sounds/bar-failed.mp3', 'fail');
+                      await audioEngine.loadSound('/assets/audio/ui-sounds/bar-complete.mp3', 'complete');
+                      await audioEngine.loadSound('/assets/audio/ui-sounds/note-flip.mp3', 'flip');
+
                       // Load current bar audio
                       const audioLoadResult = await loadAudio(currentBarIndex);
                       console.log('Audio load result:', audioLoadResult);
@@ -269,12 +228,6 @@ useEffect(() => {
                       setIsPreloading(false);
                       console.log('isAudioLoaded set to true');
                       dispatch({ type: 'SET_GAME_PHASE', payload: 'ready' });
-
-                      if (isIOS) {
-                          await new Promise(resolve => setTimeout(resolve, 100));
-                      } else {
-                          await new Promise(resolve => setTimeout(resolve, 50));
-                      }
 
                       console.log('Final state check:', {
                           isAudioLoaded,
@@ -304,27 +257,27 @@ useEffect(() => {
       console.log('Cleaning up audio initialization effect');
   };
 }, [audioFiles, currentBarIndex, loadAudio, dispatch, isAudioLoaded]);
-  useEffect(() => {
-    const fetchAudioFiles = async () => {
-        try {
-            const jsonPath = `/assets/audio/testMelodies/game${currentGameNumber}/current.json`;
-            console.log('Fetching JSON from:', jsonPath);
-            const response = await fetch(jsonPath);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const data = await response.json();
-            console.log('Successfully loaded audio files:', data);
-            setAudioFiles(data.melodyParts);
-            setFullTunePath(data.fullTune);
-            console.log('Audio files state updated');
-        } catch (error) {
-            console.error('Failed to load current.json:', error);
-        }
-    };
+useEffect(() => {
+  const fetchAudioFiles = async () => {
+      try {
+        const jsonPath = `/assets/audio/testMelodies/2024-12-15/current.json`;
+          console.log('Fetching JSON from:', jsonPath);
+          const response = await fetch(jsonPath);
+          if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const data = await response.json();
+          console.log('Successfully loaded audio files:', data);
+          setAudioFiles(data.melodyParts);
+          setFullTunePath(data.fullTune);
+          console.log('Audio files state updated');
+      } catch (error) {
+          console.error('Failed to load current.json:', error);
+      }
+  };
 
-    fetchAudioFiles();
-}, [currentGameNumber]);
+  fetchAudioFiles();
+}, []); // No dependencies needed
   
   // Keep this useEffect for loading melodies when bar changes
   useEffect(() => {
@@ -477,27 +430,6 @@ useEffect(() => {
   };
 }, [fullTunePath]);
 
-// Handle game start
-const handleStartGame = () => {   
-  trackEvent('game_started', { gameNumber: currentGameNumber });     
-  setShowStartScreen(false);
-  setShowInstructions(true); // Show instructions immediately when game starts
-  setGameMode('initial');
-    
-  dispatch({ type: 'SET_GAME_PHASE', payload: 'initial' });
-  dispatch({ type: 'UPDATE_NOTE_INDEX', payload: 0 });
-  dispatch({ type: 'RESET_BAR_HEARTS' });
-  dispatch({ type: 'RESET_COMPLETED_BARS' });
-  dispatch({ type: 'SET_BAR_FAILING', failing: false });
-    
-  setScore(0);
-  setCurrentBarIndex(0);
-  setIsGameComplete(false);
-  setIsGameEnded(false);
-  setShowEndAnimation(false);
-  setIsListenPracticeMode(false);
-};
-
 // Cleanup effect for audio
 useEffect(() => {
     return () => {
@@ -592,26 +524,23 @@ const moveToNextBar = useCallback((isSuccess = true) => {
   gameState.barHearts
 ]);
 
-const handleNextGame = () => {
-    trackEvent('game_completed', { 
-      gameNumber: currentGameNumber,
-      finalScore: score 
-    });
-  if (currentGameNumber >= 3) {
-    console.log('All games completed - should redirect to survey');
-    return;
-  }
+// eslint-disable-next-line no-unused-vars
+const handleGameReset = () => {
+  // ... function code
+  trackEvent('game_completed', { 
+    finalScore: score 
+  });
 
   // Clear existing audio
   if (melodyAudio) {
-    melodyAudio.pause();
-    melodyAudio.currentTime = 0;
-    setMelodyAudio(null);
+      melodyAudio.pause();
+      melodyAudio.currentTime = 0;
+      setMelodyAudio(null);
   }
 
   if (fullTuneMelodyAudio) {
-    fullTuneMelodyAudio.pause();
-    fullTuneMelodyAudio.currentTime = 0;
+      fullTuneMelodyAudio.pause();
+      fullTuneMelodyAudio.currentTime = 0;
   }
 
   // Reset all state
@@ -622,34 +551,21 @@ const handleNextGame = () => {
   // Reset reducer state
   dispatch({ type: 'RESET_GAME_STATE' });
 
-  // Reset game states
-  const resetGameStates = () => {
-    // Game progression
-    setCurrentGameNumber(prev => prev + 1);
-    
-    // Clear completion states
-    setIsGameComplete(false);
-    setShowEndAnimation(false);
-    setIsGameEnded(false);
-    
-    // Reset gameplay states
-    setScore(0);
-    setCurrentBarIndex(0);
-    
-    // Reset game modes
-    setGameMode('initial');
-    dispatch({ type: 'SET_GAME_PHASE', payload: 'initial' });
-    dispatch({ type: 'UPDATE_NOTE_INDEX', payload: 0 });
-    dispatch({ type: 'RESET_BAR_HEARTS' });
-    dispatch({ type: 'RESET_COMPLETED_BARS' });
-    
-    // Reset UI states
-    setIsListenPracticeMode(false);
-  };
-
-  resetGameStates();
+  // Clear completion states
+  setIsGameComplete(false);
+  setShowEndAnimation(false);
+  setIsGameEnded(false);
+  
+  // Reset game modes
+  setGameMode('initial');
+  dispatch({ type: 'SET_GAME_PHASE', payload: 'initial' });
+  dispatch({ type: 'UPDATE_NOTE_INDEX', payload: 0 });
+  dispatch({ type: 'RESET_BAR_HEARTS' });
+  dispatch({ type: 'RESET_COMPLETED_BARS' });
+  
+  // Reset UI states
+  setIsListenPracticeMode(false);
 };
-
 const handleNotePlay = useCallback(async (noteNumber) => {
   trackEvent('note_played', { 
     note: noteNumber,
@@ -763,85 +679,78 @@ const handleNotePlay = useCallback(async (noteNumber) => {
 }, [gameState, correctSequence, currentBarIndex, dispatch, moveToNextBar, setScore, setShowFirstNoteHint]);
 return (
   <div className="game-wrapper">
-    {showStartScreen ? (
-      <div className="game-container">
-        <StartScreen 
-          onStartGame={handleStartGame}
-          isLoading={isPreloading} 
-        />
-      </div>
-    ) : (
-      <div className={`game-container ${gameMode}`}>
-        <Toolbar onShowInstructions={() => setShowInstructions(true)} />
-        <GameBoard 
+    <div className={`game-container ${gameMode}`}>
+      <Toolbar onShowInstructions={() => setShowInstructions(true)} />
+      <GameBoard 
+        barHearts={gameState.barHearts}
+        currentBarIndex={currentBarIndex}
+        renderBar={{
+          correctSequence,
+          currentNoteIndex: gameState.currentNoteIndex,
+          completedBars: gameState.completedBars,
+          isGameComplete,
+          failedBars: gameState.failedBars
+        }}
+        isBarFailed={gameState.isBarFailing}
+        gamePhase={gameState.gamePhase}
+      />
+      <Controls 
+        onListenPractice={handleListenPractice}
+        onPerform={handlePerform}
+        isListenPracticeMode={isListenPracticeMode}
+        isPerformAvailable={isAudioLoaded}
+        isAudioLoaded={isAudioLoaded}
+        gamePhase={gameState.gamePhase}
+        isGameEnded={isGameEnded}
+      />
+      <VirtualInstrument 
+        notes={notes}
+        onNotePlay={handleNotePlay}
+        isGameEnded={isGameEnded}
+        isBarFailing={gameState.isBarFailing}
+        showFirstNoteHint={showFirstNoteHint}
+        correctSequence={correctSequence}
+        currentBarIndex={currentBarIndex}
+      />
+      <ProgressBar completedBars={gameState.completedBars.filter(Boolean).length} />
+      {showEndAnimation && (
+        <EndGameAnimation 
+          score={score}
           barHearts={gameState.barHearts}
-          currentBarIndex={currentBarIndex}
-          renderBar={{
-            correctSequence,
-            currentNoteIndex: gameState.currentNoteIndex,
-            completedBars: gameState.completedBars,
-            isGameComplete,
-            failedBars: gameState.failedBars
-          }}
-          isBarFailed={gameState.isBarFailing}
-          gamePhase={gameState.gamePhase}
         />
-        <Controls 
-          onListenPractice={handleListenPractice}
-          onPerform={handlePerform}
-          isListenPracticeMode={isListenPracticeMode}
-          isPerformAvailable={isAudioLoaded}
-          isAudioLoaded={isAudioLoaded}
-          gamePhase={gameState.gamePhase}
-          isGameEnded={isGameEnded}
-        />
-        <VirtualInstrument 
-  notes={notes}
-  onNotePlay={handleNotePlay}
-  isGameEnded={isGameEnded}
-  isBarFailing={gameState.isBarFailing}
-  showFirstNoteHint={showFirstNoteHint}
-  correctSequence={correctSequence}
-  currentBarIndex={currentBarIndex}
-/>
-        <ProgressBar completedBars={gameState.completedBars.filter(Boolean).length} />
-        {showEndAnimation && (
-          <EndGameAnimation 
-            score={score}
-            barHearts={gameState.barHearts}
-            onNext={handleNextGame}
-            currentGameNumber={currentGameNumber}
-          />
-        )}
-        {showInstructions && (
-          <div className="instructions-popup">
-            <div className="instructions-content">
-              <h2>HOW TO PLAY</h2>
-              <div className="instruction-flow">
-                <p>
-                  <span style={{ fontSize: '0.8em', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
-                    <img src="/assets/images/ui/heart.svg" alt="heart" style={{ width: '20px', height: '20px', margin: '0 5px' }} />
-                    TURN OFF SILENT MODE
-                    <img src="/assets/images/ui/heart.svg" alt="heart" style={{ width: '20px', height: '20px', margin: '0 5px' }} />
-                  </span>
-                  1. PRESS LISTEN & PRACTICE<br/>
-                  2. PLAY WHAT YOU HEAR USING THE COLOURFUL BUTTONS<br/>
-                  3. PRACTICE AS MANY TIMES AS YOU NEED<br/>
-                  4. PRESS PERFORM TO PLAY THE MELODY FOR REAL<br/>
-                  5. HIT THE RIGHT NOTES TO HANG ON TO YOUR HEARTS!
-                </p>
-              </div>
-              <p className="challenge">CAN YOU HIT THE RIGHT NOTES?</p>
-              <button className="next-button instructions-next" onClick={() => setShowInstructions(false)}>
-                <img src="/assets/images/ui/play.svg" alt="Next" />
-              </button>
+      )}
+      {(showInstructions || isPreloading) && gameMode === 'initial' && currentBarIndex === 0 && (
+  <div className="instructions-popup">
+          <div className="instructions-content">
+            <h2>HOW TO PLAY</h2>
+            <div className="instruction-flow">
+              <p>
+                <span style={{ fontSize: '0.8em', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
+                  <img src="/assets/images/ui/heart.svg" alt="heart" style={{ width: '20px', height: '20px', margin: '0 5px' }} />
+                  TURN OFF SILENT MODE
+                  <img src="/assets/images/ui/heart.svg" alt="heart" style={{ width: '20px', height: '20px', margin: '0 5px' }} />
+                </span>
+                1. PRESS LISTEN & PRACTICE<br/>
+                2. PLAY WHAT YOU HEAR USING THE COLOURFUL BUTTONS<br/>
+                3. PRACTICE AS MANY TIMES AS YOU NEED<br/>
+                4. PRESS PERFORM TO PLAY THE MELODY FOR REAL<br/>
+                5. HIT THE RIGHT NOTES TO HANG ON TO YOUR HEARTS!
+              </p>
             </div>
+            <p className="challenge">CAN YOU HIT THE RIGHT NOTES?</p>
+            <button 
+  className="instructions-next" 
+  onClick={handleStartGame}
+  disabled={isPreloading || !isAudioLoaded}
+>
+  <img src="/assets/images/ui/play.svg" alt="Next" />
+</button>
           </div>
-        )}
-      </div>
-    )}
+        </div>
+      )}
+    </div>
   </div>
-);
+ );
 }
 
 export default App;

@@ -195,11 +195,36 @@ body {
   font-family: 'patrick-hand-sc', sans-serif;
 }
 
+/* Update the instructions-next class to inherit next-button styles */
 .instructions-next {
   position: static;
+  width: 210px;
+  height: 110px;
   margin: 20px auto 0;
-  width: 170px;
-  height: 90px;
+  background: none;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  animation: pulse 2s infinite;
+}
+
+.instructions-next img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.instructions-next:hover {
+  animation: none;
+  transform: scale(1.1);
+}
+
+.instructions-next:active {
+  transform: scale(0.95);
 }
 
 .virtual-instrument {
