@@ -18,7 +18,9 @@ const initialGameState = {
   completedBars: [false, false, false, false],
   isBarFailing: false,
   barHearts: [4, 4, 4, 4],
-  failedBars: [false, false, false, false]
+  failedBars: [false, false, false, false],
+  // Add this new property
+  hintLevel: 0  // 0 = no hints, 1 = first 2 notes, 2 = full sequence
 };
 
 function gameReducer(state, action) {
@@ -60,13 +62,24 @@ function gameReducer(state, action) {
                 )
             };
 
-        case 'WRONG_NOTE':
-            return {
-                ...state,
-                barHearts: state.barHearts.map((hearts, index) => 
-                    index === action.barIndex ? hearts - 1 : hearts
-                )
-            };
+            case 'WRONG_NOTE':
+              const currentHearts = state.barHearts[action.barIndex];
+              const newHearts = currentHearts - 1;
+              const newHintLevel = newHearts === 2 ? 1 : newHearts === 1 ? 2 : state.hintLevel;
+              
+              return {
+                  ...state,
+                  barHearts: state.barHearts.map((hearts, index) => 
+                      index === action.barIndex ? newHearts : hearts
+                  ),
+                  hintLevel: newHintLevel
+              };
+
+              case 'RESET_HINT_LEVEL':
+    return {
+        ...state,
+        hintLevel: 0
+    };
 
         case 'SET_BAR_FAILING':
             return {
@@ -312,7 +325,7 @@ useEffect(() => {
         const playSuccess = await audioEngine.playSound(
             `melody${currentBarIndex}`,
             0,
-            () => setShowFirstNoteHint(true)
+            () => setShowFirstNoteHint(true)  // Show hint after melody plays
         );
         
         if (playSuccess) {
@@ -326,10 +339,8 @@ useEffect(() => {
         
     } catch (error) {
         console.error('Failed to play melody:', error);
-        // Error recovery...
     }
 }, [currentBarIndex, dispatch, isAudioLoaded]);
-
 // Updated perform mode handler
 const handlePerform = useCallback(async () => {
   trackEvent('perform_mode_entered', { barIndex: currentBarIndex });
@@ -579,8 +590,8 @@ const handleNotePlay = useCallback(async (noteNumber) => {
   const currentSequence = correctSequence[currentBarIndex];
   const firstNote = currentSequence?.[0]?.number;
 
-  // Only remove hint if this is the correct first note
-  if (noteNumber === firstNote) {
+  // Only remove hint if this is the correct first note OR we're in practice mode
+  if (noteNumber === firstNote || gameState.gamePhase === 'practice') {
     setShowFirstNoteHint(false);
   }
 
@@ -704,14 +715,16 @@ return (
         isGameEnded={isGameEnded}
       />
       <VirtualInstrument 
-        notes={notes}
-        onNotePlay={handleNotePlay}
-        isGameEnded={isGameEnded}
-        isBarFailing={gameState.isBarFailing}
-        showFirstNoteHint={showFirstNoteHint}
-        correctSequence={correctSequence}
-        currentBarIndex={currentBarIndex}
-      />
+  notes={notes}
+  onNotePlay={handleNotePlay}
+  isGameEnded={isGameEnded}
+  isBarFailing={gameState.isBarFailing}
+  showFirstNoteHint={showFirstNoteHint}
+  correctSequence={correctSequence}
+  currentBarIndex={currentBarIndex}
+  hintLevel={gameState.hintLevel}
+  currentNoteIndex={gameState.currentNoteIndex}  // Add this line
+/>
       <ProgressBar completedBars={gameState.completedBars.filter(Boolean).length} />
       {showEndAnimation && (
         <EndGameAnimation 
