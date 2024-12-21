@@ -1,0 +1,393 @@
+/* Base styles */
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  transition: background-color 0.5s ease;
+  background-color: #FFFDEE;  /* Set cream background once */
+}
+
+/* Delete the other background-color rules */
+
+.game-wrapper {
+  width: 100%;
+  min-height: 100vh;
+  min-height: calc(var(--vh, 1vh) * 100);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px 0;
+}
+
+.game-container {
+  width: 390px;
+  height: 844px;
+  position: relative;
+  transform-origin: top center;
+  transform-style: preserve-3d;  /* Add this */
+  perspective: 1000px;          /* Add this */
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+
+.bars-container {
+  position: relative;
+  width: 100%;
+  height: 340px;
+}
+
+.lives-container {
+  position: absolute;
+  top: 120px;  /* Changed from 90px to 10% */
+  left: 60px;
+  width: 270px;
+  height: 60px;
+}
+
+.life-indicator {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  height: 100%;
+}
+
+.life-indicator img {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+}
+
+/* Bar components */
+.bar {
+  position: absolute;
+  left: 60px;
+  width: 270px;
+  height: 60px;
+}
+
+.note {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  transform: translateX(-50%) translateY(-50%);
+  top: 50%;
+}
+
+/* Note positions for all bars */
+.bar .note:nth-child(1) { left: 0px; }
+.bar .note:nth-child(2) { left: 70px; }
+.bar .note:nth-child(3) { left: 140px; }
+.bar .note:nth-child(4) { left: 210px; }
+
+/* Individual bar positions */
+.bar1 { top: 230px; }
+.bar2 { top: 300px; }
+.bar3 { top: 370px; }
+.bar4 { top: 440px; }
+
+.controls-container {
+  position: absolute;
+  top: 550px;
+  left: 60px;
+  width: 270px;
+  height: 40px;
+  z-index: 3;  /* Add this to keep controls above virtual instrument */
+}
+
+/* In your App.css */
+.control-button {
+  position: absolute;
+  height: 40px;
+  border: none;
+  padding: 0;
+  background-color: transparent;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.3s ease; /* Added opacity transition */
+}
+
+/* Add this new rule for the fade effect */
+.control-button.listen-practice:disabled {
+  opacity: 0.2;  /* More faded than the regular disabled state */
+  pointer-events: none;  /* Ensures the button can't be interacted with */
+}
+
+.control-button.listen-practice {
+  left: 0;
+  width: 170px;
+}
+
+.control-button.perform {
+  left: 180px;
+  width: 90px;
+}
+
+.control-button:disabled {
+  opacity: 0.2;
+  cursor: not-allowed;
+}
+
+.control-button:not(:disabled):hover {
+  transform: scale(1.05);
+}
+
+.control-button.active {
+  transform: scale(0.95);
+}
+
+/* Instructions popup styles */
+.instructions-popup {
+  position: absolute;
+  width: 350px;
+  height: auto;
+  background-color: #FFFDEE;
+  border-radius: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  padding: 30px 20px;
+  box-sizing: border-box;
+  border: 7px solid #AB08FF;
+  font-family: 'patrick-hand-sc', sans-serif;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+
+.instructions-content {
+  color: black;
+  text-align: center;
+}
+
+.instructions-content h2 {
+  font-size: 28px;
+  margin-bottom: 30px;
+  font-family: 'patrick-hand-sc', sans-serif;
+}
+
+.instruction-flow {
+  padding: 0 10px;
+  margin-bottom: 30px;
+}
+
+.instruction-flow p {
+  font-size: 22px;
+  line-height: 1.6;
+  text-align: left;
+  margin: 0;
+  font-family: 'patrick-hand-sc', sans-serif;
+}
+
+/* Update the instructions-next class to inherit next-button styles */
+.instructions-next {
+  position: static;
+  width: 210px;
+  height: 110px;
+  margin: 20px auto 0;
+  background: none;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  animation: pulse 2s infinite;
+}
+
+.instructions-next img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.instructions-next:hover {
+  animation: none;
+  transform: scale(1.1);
+}
+
+.instructions-next:active {
+  transform: scale(0.95);
+}
+
+.virtual-instrument {
+  position: absolute;
+  top: 620px;
+  left: 60px;
+  width: 270px;
+  height: 130px;
+  display: grid;
+  grid-template-columns: repeat(4, 60px);
+  grid-template-rows: repeat(2, 60px);
+  gap: 10px;
+  z-index: 2;
+}
+
+/* Cube button styles */
+.cube-button {
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+}
+
+.cube-button.flipped {
+  transform: rotateX(-180deg);
+}
+
+.progress-bar-container {
+  position: absolute;
+  bottom: 64px;
+  left: 15.38%;
+  width: 69.23%;
+  height: 10px;
+  background-color: #fffdee;
+  border: 4px solid #00c22d;
+  border-radius: 5px;
+  overflow: hidden;
+  z-index: 1; /* Add this to ensure proper layering */
+}
+
+/* Note visibility */
+.note {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.note.visible {
+  opacity: 1;
+}
+
+/* Adjust styles for better visibility in play and practice modes */
+.game-container.play *, .game-container.practice * {
+  color: black;
+}
+
+/* Optional: Add a subtle animation to the overlay */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes practiceGlow {
+  0% { box-shadow: 0 0 5px rgba(173, 216, 230, 0.5); }
+  50% { box-shadow: 0 0 15px rgba(173, 216, 230, 0.8); }
+  100% { box-shadow: 0 0 5px rgba(173, 216, 230, 0.5); }
+}
+
+/* Fade elements during practice mode */
+.game-container.practice .life-indicator,
+.game-container.practice .line,
+.game-container.practice .note.visible {
+  opacity: 0.3;
+  transition: opacity 0.5s ease;
+}
+
+/* Keep active bar notes more visible */
+.game-container.practice .bar.active .note.visible {
+  opacity: 0.6;
+}
+
+/* Media queries for responsiveness */
+@media (max-width: 389px) {
+  .game-container {
+    transform: scale(0.9);
+    transform-origin: top center;
+  }
+}
+
+@media (min-width: 390px) and (max-width: 767px) {
+  .game-container {
+    transform: scale(1);
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .game-container {
+    transform: scale(1.2);
+    transform-origin: center;
+  }
+}
+
+@media (min-width: 1024px) {
+  .game-container {
+    transform: scale(1.2);
+    transform-origin: top;
+  }
+}
+
+/* Ensure the game fits vertically */
+@media (max-height: 843px) {
+  .game-container {
+    transform: scale(0.9);
+    transform-origin: top center;
+  }
+}
+/* Game Phase Styles */
+.game-container.practice .bars-container,
+.game-container.practice .lives-container,
+.game-container.practice .progress-bar {
+  opacity: 0.3;
+  transition: opacity 0.5s ease;
+}
+
+.game-container.play * {
+  opacity: 1;
+  transition: opacity 0.5s ease;
+}
+
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }  /* Reduced from 1.1 to 1.05 */
+  100% { transform: scale(1); }
+}
+
+/* Add this right after the pulse keyframes */
+.control-button.listen-practice.animated {
+  animation: pulse 1s infinite;
+}
+
+/* Your existing Transition states continue below */
+.fade-enter {
+opacity: 0;
+}
+
+/* Transition states */
+.fade-enter {
+  opacity: 0;
+}
+
+.fade-enter-active {
+  opacity: 1;
+  transition: opacity 0.5s ease;
+}
+
+.fade-exit {
+  opacity: 1;
+}
+
+.fade-exit-active {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+/* Ensure virtual instrument stays interactive */
+.virtual-instrument {
+  pointer-events: auto !important;
+}
