@@ -53,7 +53,7 @@ body {
 
 .lives-container {
   position: absolute;
-  top: 120px;  /* Changed from 90px to 10% */
+  top: 120px;  /* Keep original position */
   left: 60px;
   width: 270px;
   height: 60px;

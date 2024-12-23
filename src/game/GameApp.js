@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useReducer } from 'react';
 import './Game.css';  // Updated from App.css
 import { audioEngine } from '../AudioEngine';  // Go up one level
-import Toolbar from './components/Toolbar';
+import HeaderToolbar from '../components/HeaderToolbar'; 
 import GameBoard from './components/GameBoard';
 import Controls from './components/Controls';
 import VirtualInstrument from './components/VirtualInstrument';
@@ -677,7 +677,7 @@ const handleNotePlay = useCallback(async (noteNumber) => {
 return (
   <div className="game-wrapper">
     <div className={`game-container ${gameMode}`}>
-      <Toolbar onShowInstructions={() => setShowInstructions(true)} />
+    <HeaderToolbar /> 
       <GameBoard 
         barHearts={gameState.barHearts}
         currentBarIndex={currentBarIndex}
