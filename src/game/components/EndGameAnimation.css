@@ -57,6 +57,8 @@
   opacity: 0;
   transition: opacity 0.2s ease-in-out;
   margin: 8px 0;
+  display: flex;  /* Add this line */
+  justify-content: center;  /* Add this line */
 }
 
 .bar-hearts.visible {

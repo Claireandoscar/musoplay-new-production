@@ -7,6 +7,9 @@ import Controls from './components/Controls';
 import VirtualInstrument from './components/VirtualInstrument';
 import ProgressBar from './components/ProgressBar';
 import EndGameAnimation from './components/EndGameAnimation';
+import { supabase } from '../services/supabase';
+import { useAuth } from '../services/AuthContext';
+import { ScoreService } from '../services/scoreService';
 
 
 const initialGameState = {
@@ -107,8 +110,12 @@ function gameReducer(state, action) {
             return state;
     }
 }
-function App() {
+
+function GameApp() {  // Change this line
+  const { user } = useAuth();
+  console.log('Current authenticated user:', user); 
   const [gameState, dispatch] = useReducer(gameReducer, initialGameState);
+  
   
   // Audio-related states
   const [isPreloading, setIsPreloading] = useState(true);
@@ -196,6 +203,18 @@ function App() {
         return null;
     }
 }, [audioFiles]); // Removed currentGameNumber from dependencies
+
+useEffect(() => {
+  const checkAuth = async () => {
+    const { data: { user }, error } = await supabase.auth.getUser();
+    console.log('Current user:', user);
+    if (error) {
+      console.error('Auth error:', error);
+    }
+  };
+  
+  checkAuth();
+}, []);
 
 useEffect(() => {
   console.log('Audio initialization effect running');
@@ -454,15 +473,80 @@ const moveToNextBar = useCallback((isSuccess = true) => {
     melodyAudio.currentTime = 0;
   }
   
-  // Reset hint state when moving to next bar
-  setShowFirstNoteHint(false);
-
-  if (melodyAudio) {
-    melodyAudio.pause();
-    melodyAudio.currentTime = 0;
-  }
-  
   const handleGameEnd = async () => {
+    console.log('Game ending with score:', score);
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      console.log('Auth check:', { user, authError });
+
+      if (user) {
+        // Check if user has already played today
+        const today = new Date().toISOString().split('T')[0]; // Gets YYYY-MM-DD
+        const { data: existingScore } = await supabase
+          .from('game_scores')
+          .select('*')
+          .eq('user_id', user.id)
+          .gte('played_at', today)
+          .lt('played_at', today + 'T23:59:59')
+          .single();
+
+        // Only record score if no existing score for today
+        if (!existingScore) {
+          // Record in game_scores table
+          await ScoreService.recordGameScore(user.id, gameState.barHearts);
+
+          // First try to get current stats
+          let { data: currentStats, error: fetchError } = await supabase
+            .from('user_stats')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+
+          console.log('Current stats:', { currentStats, fetchError });
+
+          if (!currentStats) {
+            // Insert initial stats
+            const { data: insertData, error: insertError } = await supabase
+              .from('user_stats')
+              .insert({
+                id: user.id,
+                current_streak: 1,
+                best_streak: 1,
+                total_games_played: 1,
+                total_perfect_scores: score === 16 ? 1 : 0,
+                last_played_at: new Date().toISOString()
+              })
+              .select()
+
+            console.log('Insert result:', { insertData, insertError });
+          } else {
+            // Update existing stats
+            const lastPlayed = new Date(currentStats.last_played_at);
+            const today = new Date();
+            const isToday = lastPlayed.toDateString() === today.toDateString();
+            const streak = isToday ? currentStats.current_streak : currentStats.current_streak + 1;
+
+            const { data: updateData, error: updateError } = await supabase
+              .from('user_stats')
+              .update({
+                current_streak: streak,
+                best_streak: Math.max(streak, currentStats.best_streak),
+                total_games_played: currentStats.total_games_played + 1,
+                total_perfect_scores: currentStats.total_perfect_scores + (score === 16 ? 1 : 0),
+                last_played_at: new Date().toISOString()
+              })
+              .eq('id', user.id)
+              .select()
+
+            console.log('Update result:', { updateData, updateError });
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Detailed error in handleGameEnd:', error);
+    }
+
+    // Continue with game end animation regardless of score recording
     setIsGameComplete(true);
     setIsGameEnded(true);
     setGameMode('ended');
@@ -482,7 +566,6 @@ const moveToNextBar = useCallback((isSuccess = true) => {
       fullTuneMelodyAudio.play().catch(error => console.error("Audio playback failed:", error));
     }
   };
-  
   const handleNextBar = async () => {
     dispatch({
       type: 'UPDATE_COMPLETED_BARS',
@@ -524,12 +607,14 @@ const moveToNextBar = useCallback((isSuccess = true) => {
 }, [
   currentBarIndex,    
   correctSequence.length,   
-  fullTuneMelodyAudio,   
   melodyAudio,   
   dispatch,   
-  loadAudio
+  loadAudio,
+  score,
+  setShowFirstNoteHint,
+  fullTuneMelodyAudio,
+  gameState.barHearts
 ]);
-
 // eslint-disable-next-line no-unused-vars
 const handleGameReset = () => {
   // Clear existing audio
@@ -752,4 +837,4 @@ return (
  );
 }
 
-export default App;
+export default GameApp;  // Change this line
