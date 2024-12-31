@@ -9,8 +9,14 @@ const ScoreHistory = ({ userId }) => {
   useEffect(() => {
     const fetchGameHistory = async () => {
       try {
-        const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
-        const endOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+        // Set time to midnight UTC
+        const startOfMonth = new Date(Date.UTC(currentMonth.getFullYear(), currentMonth.getMonth(), 1));
+        const endOfMonth = new Date(Date.UTC(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0, 23, 59, 59, 999));
+
+        console.log('Fetching scores for range:', {
+          start: startOfMonth.toISOString(),
+          end: endOfMonth.toISOString()
+        });
 
         const { data: scores, error } = await supabase
           .from('game_scores')
@@ -18,28 +24,36 @@ const ScoreHistory = ({ userId }) => {
           .eq('user_id', userId)
           .gte('played_at', startOfMonth.toISOString())
           .lte('played_at', endOfMonth.toISOString())
-          .order('played_at', { ascending: true });
+          .order('played_at', { ascending: false });
 
         if (error) throw error;
 
-        const firstAttempts = scores?.reduce((acc, game) => {
-          const dateKey = game.played_at.split('T')[0];
-          if (!acc[dateKey]) {
-            acc[dateKey] = game;
-          }
-          return acc;
-        }, {});
+        console.log('Fetched scores:', scores);
+
+        // Update the reduce function in latestAttempts:
+const latestAttempts = scores?.reduce((acc, game) => {
+  const dateKey = new Date(game.played_at).toISOString().split('T')[0];
+  if (!acc[dateKey] || new Date(game.played_at) > new Date(acc[dateKey].played_at)) {
+    acc[dateKey] = {
+      ...game,
+      calculatedScore: Array.isArray(game.bar_scores) 
+        ? game.bar_scores.reduce((sum, hearts) => sum + hearts, 0)
+        : 0
+    };
+  }
+  return acc;
+}, {});
 
         const filledHistory = [];
         let currentDate = new Date(startOfMonth);
 
         while (currentDate <= endOfMonth) {
           const dateStr = currentDate.toISOString().split('T')[0];
-          const gameForDay = firstAttempts?.[dateStr];
+          const gameForDay = latestAttempts?.[dateStr];
 
           filledHistory.push({
             date: dateStr,
-            score: gameForDay?.total_score || null,
+            score: gameForDay?.calculatedScore || null,
             bar_scores: gameForDay?.bar_scores || [],
             played: !!gameForDay
           });
@@ -56,7 +70,11 @@ const ScoreHistory = ({ userId }) => {
     };
 
     fetchGameHistory();
+    const interval = setInterval(fetchGameHistory, 10000);
+    return () => clearInterval(interval);
   }, [userId, currentMonth]);
+
+
 
   if (loading) {
     return <div className="loading loading-spinner loading-lg"></div>;
@@ -93,46 +111,41 @@ const ScoreHistory = ({ userId }) => {
         </div>
 
         <div className="grid grid-cols-7 gap-2">
-        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
-  <div key={`day-${index}`} className="text-center font-['Patrick_Hand_SC'] text-[#1174B9]">
-    {day}
-  </div>
-))}
+          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
+            <div key={`day-${index}`} className="text-center font-['Patrick_Hand_SC'] text-[#1174B9]">
+              {day}
+            </div>
+          ))}
           
           {[...Array(new Date(gameHistory[0]?.date).getDay() || 0)].map((_, i) => (
-            <div key={`empty-${i}`} className="aspect-square border border-[#1174B9]/30 rounded-lg" />
+            <div key={`empty-${i}`} className="aspect-square border-2 border-[#1174B9]/10 rounded-lg" />
           ))}
           
           {gameHistory.map((game) => (
             <div 
               key={game.date}
-              className={`aspect-square rounded-lg border ${
-                game.played 
-                  ? 'bg-[#FFFFF5] border-[#1174B9]' 
-                  : 'bg-[#FFFDEE] border-[#1174B9]/30 flex items-center justify-center'
+              className={`aspect-square border-2 border-[#1174B9]/10 rounded-lg flex flex-col ${
+                game.played ? 'bg-[#FFFFF5]' : 'bg-[#FFFDEE]'
               }`}
             >
-              {game.played ? (
-                <div className="w-full h-full flex items-center justify-center p-0.5">
-                  <div className="flex flex-col gap-[0.05vh] sm:gap-[0.2vh]">
-                    {game.bar_scores.map((hearts, barIndex) => (
-                      <div key={barIndex} className="flex gap-[0.05vh] sm:gap-[0.2vh]">
-                        {[...Array(4)].map((_, i) => (
-                          <img 
-                            key={i}
-                            src={`/assets/images/ui/${i < hearts ? 'heart.svg' : 'heart-empty.svg'}`}
-                            alt={i < hearts ? "Full Heart" : "Empty Heart"}
-                            className="w-[0.8vh] h-[0.8vh] sm:w-[1.5vh] sm:h-[1.5vh]"
-                          />
-                        ))}
-                      </div>
-                    ))}
-                  </div>
+              <div className="text-xs text-[#1174B9] p-1">
+                {new Date(game.date).getDate()}
+              </div>
+              {game.played && game.bar_scores && (
+                <div className="w-full flex flex-col justify-center p-1">
+                  {game.bar_scores.map((hearts, barIndex) => (
+                    <div key={barIndex} className="flex gap-[2px] justify-center">
+                      {[...Array(4)].map((_, i) => (
+                        <img 
+                          key={i}
+                          src={`/assets/images/ui/${i < hearts ? 'heart.svg' : 'heart-empty.svg'}`}
+                          alt={i < hearts ? "Full Heart" : "Empty Heart"}
+                          className="w-[10px] h-[10px]"
+                        />
+                      ))}
+                    </div>
+                  ))}
                 </div>
-              ) : (
-                <p className="text-sm font-['Patrick_Hand_SC'] text-[#1174B9]/50">
-                  {new Date(game.date).getDate()}
-                </p>
               )}
             </div>
           ))}

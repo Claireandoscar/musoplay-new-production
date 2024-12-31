@@ -1,0 +1,13 @@
+{
+  "imports": {
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2.39.3"
+  },
+  "tasks": {
+    "deploy": "supabase functions deploy update-daily-melody"
+  },
+  "compilerOptions": {
+    "allowJs": true,
+    "lib": ["deno.window"],
+    "strict": true
+  }
+}

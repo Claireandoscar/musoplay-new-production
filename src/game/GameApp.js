@@ -10,6 +10,8 @@ import EndGameAnimation from './components/EndGameAnimation';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../services/AuthContext';
 import { ScoreService } from '../services/scoreService';
+import { audioFetchService } from '../services/audioFetchService';
+
 
 
 const initialGameState = {
@@ -202,7 +204,7 @@ function GameApp() {  // Change this line
         setIsAudioLoaded(false);
         return null;
     }
-}, [audioFiles]); // Removed currentGameNumber from dependencies
+}, [audioFiles]); // Added missing dependencies
 
 useEffect(() => {
   const checkAuth = async () => {
@@ -216,97 +218,75 @@ useEffect(() => {
   checkAuth();
 }, []);
 
+
+// eslint-disable-next-line react-hooks/exhaustive-deps
 useEffect(() => {
-  console.log('Audio initialization effect running');
-  
-  const initAudio = async () => {
-      console.log('Starting initAudio in App.js');
-      try {
-          // Platform detection
-          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-          console.log('Platform:', isIOS ? 'iOS' : 'Android/Other');
+  const fetchAndInitAudio = async () => {
+    try {
+      console.log('Starting audio setup...');
+      setIsPreloading(true);
 
-          if (audioFiles.length > 0) {
-              console.log(`Found ${audioFiles.length} audio files`);
-              setIsPreloading(true);
+      // First, initialize the audio engine
+      const success = await audioEngine.init();
+      console.log('AudioEngine init result:', success);
 
-              const success = await audioEngine.init();
-              console.log('AudioEngine init result:', success);
-
-              if (success) {
-                  try {
-                      // Load all piano notes (1-8) first
-                      console.log('Loading piano notes...');
-                      for (let i = 1; i <= 8; i++) {
-                          await audioEngine.loadSound(`/assets/audio/n${i}.mp3`, `n${i}`);
-                      }
-
-                      // Then load UI sounds
-                      console.log('Loading UI sounds...');
-                      await audioEngine.loadSound('/assets/audio/ui-sounds/wrong-note.mp3', 'wrong');
-                      await audioEngine.loadSound('/assets/audio/ui-sounds/bar-failed.mp3', 'fail');
-                      await audioEngine.loadSound('/assets/audio/ui-sounds/bar-complete.mp3', 'complete');
-                      await audioEngine.loadSound('/assets/audio/ui-sounds/note-flip.mp3', 'flip');
-
-                      // Load current bar audio
-                      const audioLoadResult = await loadAudio(currentBarIndex);
-                      console.log('Audio load result:', audioLoadResult);
-
-                      setIsAudioLoaded(true);
-                      setIsPreloading(false);
-                      console.log('isAudioLoaded set to true');
-                      dispatch({ type: 'SET_GAME_PHASE', payload: 'ready' });
-
-                      console.log('Final state check:', {
-                          isAudioLoaded,
-                          audioFiles: audioFiles.length,
-                          currentBar: currentBarIndex
-                      });
-                  } catch (loadError) {
-                      console.error('Error loading audio:', loadError);
-                      setIsAudioLoaded(false);
-                      setIsPreloading(false);
-                  }
-              }
-          } else {
-              console.log('No audio files available yet');
-              setIsPreloading(false);
-          }
-      } catch (error) {
-          console.error('Audio initialization error:', error);
-          setIsAudioLoaded(false);
-          setIsPreloading(false);
+      if (!success) {
+        throw new Error('Failed to initialize audio engine');
       }
+
+      // Load basic sounds first
+      console.log('Loading basic sounds...');
+      for (let i = 1; i <= 8; i++) {
+        await audioEngine.loadSound(`/assets/audio/n${i}.mp3`, `n${i}`);
+      }
+      
+      await audioEngine.loadSound('/assets/audio/ui-sounds/wrong-note.mp3', 'wrong');
+      await audioEngine.loadSound('/assets/audio/ui-sounds/bar-failed.mp3', 'fail');
+      await audioEngine.loadSound('/assets/audio/ui-sounds/bar-complete.mp3', 'complete');
+      await audioEngine.loadSound('/assets/audio/ui-sounds/note-flip.mp3', 'flip');
+
+      // Then fetch melody files
+      console.log('Fetching melody files...');
+      try {
+        const melodyData = await audioFetchService.fetchSupabaseAudio();
+        const localDateString = audioFetchService.getLocalDateString();
+        
+        if (melodyData.date === localDateString) {
+          console.log('Setting up today\'s melody');
+          setAudioFiles(melodyData.melodyParts);
+          setFullTunePath(melodyData.fullTune);
+          
+          // Load the first bar
+          await loadAudio(0);
+        } else {
+          throw new Error('Melody not for today');
+        }
+      } catch (error) {
+        console.log('Using fallback melody:', error);
+        const fallbackData = await audioFetchService.fetchFallbackAudio();
+        setAudioFiles(fallbackData.melodyParts);
+        setFullTunePath(fallbackData.fullTune);
+        await loadAudio(0);
+      }
+
+      setIsAudioLoaded(true);
+      dispatch({ type: 'SET_GAME_PHASE', payload: 'ready' });
+      console.log('Audio setup complete');
+    } catch (error) {
+      console.error('Audio setup failed:', error);
+      setIsAudioLoaded(false);
+    } finally {
+      setIsPreloading(false);
+    }
   };
 
-  initAudio();
+  fetchAndInitAudio();
 
   return () => {
-      console.log('Cleaning up audio initialization effect');
+    console.log('Cleaning up audio setup');
+    // Any cleanup needed
   };
-}, [audioFiles, currentBarIndex, loadAudio, dispatch, isAudioLoaded]);
-useEffect(() => {
-  const fetchAudioFiles = async () => {
-      try {
-        const jsonPath = `/assets/audio/testMelodies/2024-12-15/current.json`;
-          console.log('Fetching JSON from:', jsonPath);
-          const response = await fetch(jsonPath);
-          if (!response.ok) {
-              throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          const data = await response.json();
-          console.log('Successfully loaded audio files:', data);
-          setAudioFiles(data.melodyParts);
-          setFullTunePath(data.fullTune);
-          console.log('Audio files state updated');
-      } catch (error) {
-          console.error('Failed to load current.json:', error);
-      }
-  };
-
-  fetchAudioFiles();
-}, []); // No dependencies needed
-  
+}, []); // Remove loadAudio dependency
   // Keep this useEffect for loading melodies when bar changes
   useEffect(() => {
     if (correctSequence.length > 0) {
@@ -474,78 +454,67 @@ const moveToNextBar = useCallback((isSuccess = true) => {
   }
   
   const handleGameEnd = async () => {
+    console.log('handleGameEnd triggered', { 
+      score,
+      barHearts: gameState.barHearts,
+      user: user?.id 
+    });
+    
     console.log('Game ending with score:', score);
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       console.log('Auth check:', { user, authError });
-
+  
       if (user) {
-        // Check if user has already played today
-        const today = new Date().toISOString().split('T')[0]; // Gets YYYY-MM-DD
-        const { data: existingScore } = await supabase
-          .from('game_scores')
+        // Record in game_scores table (removed existingScore check)
+        await ScoreService.recordGameScore(user.id, gameState.barHearts);
+  
+        // First try to get current stats
+        let { data: currentStats, error: fetchError } = await supabase
+          .from('user_stats')
           .select('*')
-          .eq('user_id', user.id)
-          .gte('played_at', today)
-          .lt('played_at', today + 'T23:59:59')
+          .eq('id', user.id)
           .single();
-
-        // Only record score if no existing score for today
-        if (!existingScore) {
-          // Record in game_scores table
-          await ScoreService.recordGameScore(user.id, gameState.barHearts);
-
-          // First try to get current stats
-          let { data: currentStats, error: fetchError } = await supabase
+  
+        console.log('Current stats:', { currentStats, fetchError });
+  
+        if (!currentStats) {
+          // Insert initial stats
+          const { data: insertData, error: insertError } = await supabase
             .from('user_stats')
-            .select('*')
+            .insert({
+              id: user.id,
+              current_streak: 1,
+              best_streak: 1,
+              total_games_played: 1,
+              total_perfect_scores: score === 16 ? 1 : 0,
+              last_played_at: new Date().toISOString()
+            })
+            .select();
+  
+          console.log('Insert result:', { insertData, insertError });
+        } else {
+          // Update existing stats
+          const lastPlayed = new Date(currentStats.last_played_at);
+          const today = new Date();
+  
+          const { data: updateData, error: updateError } = await supabase
+            .from('user_stats')
+            .update({
+              total_games_played: currentStats.total_games_played + 1,
+              total_perfect_scores: currentStats.total_perfect_scores + (score === 16 ? 1 : 0),
+              last_played_at: new Date().toISOString()
+            })
             .eq('id', user.id)
-            .single();
-
-          console.log('Current stats:', { currentStats, fetchError });
-
-          if (!currentStats) {
-            // Insert initial stats
-            const { data: insertData, error: insertError } = await supabase
-              .from('user_stats')
-              .insert({
-                id: user.id,
-                current_streak: 1,
-                best_streak: 1,
-                total_games_played: 1,
-                total_perfect_scores: score === 16 ? 1 : 0,
-                last_played_at: new Date().toISOString()
-              })
-              .select()
-
-            console.log('Insert result:', { insertData, insertError });
-          } else {
-            // Update existing stats
-            const lastPlayed = new Date(currentStats.last_played_at);
-            const today = new Date();
-            const isToday = lastPlayed.toDateString() === today.toDateString();
-            const streak = isToday ? currentStats.current_streak : currentStats.current_streak + 1;
-
-            const { data: updateData, error: updateError } = await supabase
-              .from('user_stats')
-              .update({
-                current_streak: streak,
-                best_streak: Math.max(streak, currentStats.best_streak),
-                total_games_played: currentStats.total_games_played + 1,
-                total_perfect_scores: currentStats.total_perfect_scores + (score === 16 ? 1 : 0),
-                last_played_at: new Date().toISOString()
-              })
-              .eq('id', user.id)
-              .select()
-
-            console.log('Update result:', { updateData, updateError });
-          }
+            .select();
+  
+          console.log('Update result:', { updateData, updateError });
         }
       }
     } catch (error) {
       console.error('Detailed error in handleGameEnd:', error);
     }
-
+  
     // Continue with game end animation regardless of score recording
     setIsGameComplete(true);
     setIsGameEnded(true);
@@ -557,7 +526,7 @@ const moveToNextBar = useCallback((isSuccess = true) => {
       completed: true
     });
     dispatch({ type: 'SET_GAME_PHASE', payload: 'ended' });
-
+  
     await new Promise(resolve => setTimeout(resolve, 2000));
     
     setShowEndAnimation(true);

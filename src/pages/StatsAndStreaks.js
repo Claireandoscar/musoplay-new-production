@@ -15,24 +15,46 @@ const StatsAndStreaks = () => {
     barPerformance: [0, 0, 0, 0]
   });
 
-  useEffect(() => {
-    const loadStats = async () => {
-      if (!user) {
-        navigate('/');
-        return;
-      }
-      try {
-        const userStats = await ScoreService.getUserStats(user.id);
-        setStats(userStats);
-      } catch (error) {
-        console.error('Error loading stats:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const loadStats = async () => {
+    if (!user) {
+      navigate('/');
+      return;
+    }
+    try {
+      setLoading(true);
+      const userStats = await ScoreService.getUserStats(user.id);
+      setStats(userStats);
+    } catch (error) {
+      console.error('Error loading stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     loadStats();
   }, [user, navigate]);
+
+  // Add effect for focus/visibility changes
+  useEffect(() => {
+    const handleFocus = () => {
+      console.log('Window focused - refreshing stats');
+      loadStats();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        console.log('Page visible - refreshing stats');
+        loadStats();
+      }
+    });
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
+    };
+  }, []);
 
   if (loading) {
     return (
@@ -95,9 +117,9 @@ const StatsAndStreaks = () => {
           </div>
         </div>
 
-        {/* Main Content Area - Desktop: side by side, Mobile: stacked */}
+        {/* Main Content Area */}
         <div className="block lg:flex lg:gap-4">
-          {/* Today's Performance - Left side on desktop */}
+          {/* Today's Performance */}
           <div className="lg:w-1/2 mb-6 lg:mb-0">
             <div className="card bg-[#FFFFF5] shadow-xl border-2 border-[#1174B9]/30 rounded-lg h-full">
               <div className="card-body p-6">
@@ -129,7 +151,7 @@ const StatsAndStreaks = () => {
             </div>
           </div>
 
-          {/* Calendar - Right side on desktop */}
+          {/* Calendar */}
           <div className="lg:w-1/2">
             <ScoreHistory userId={user.id} />
           </div>
