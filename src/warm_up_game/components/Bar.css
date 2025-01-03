@@ -1,0 +1,121 @@
+.bar {
+  position: absolute;
+  left: 60px;
+  width: 270px;
+  height: 60px;
+}
+
+/* Individual bar positioning */
+.bar1 { top: 260px; }
+.bar2 { top: 330px; }
+.bar3 { top: 400px; }
+.bar4 { top: 470px; }
+
+.bar .line {
+  position: absolute;
+  top: 30px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: #1174b9;
+}
+
+/* Only increase thickness when bar is active AND in play mode */
+.game-container.play .bar.active .line {
+  height: 4px;
+}
+
+.bar .note {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  top: 0;
+  transform-style: preserve-3d;
+  perspective: 1000px;
+  transform: translateY(-50%);
+  opacity: 0;
+  visibility: hidden; /* Add this */
+  transition: opacity 0.3s ease, transform 0.6s, visibility 0.3s ease; /* Add visibility */
+  will-change: opacity, transform, visibility; /* Add this for performance */
+}
+
+/* Specific quaver note handling */
+.bar .note.quaver {
+  width: 27.6px;
+  transform: translateY(-50%) translateX(0); /* Reset transform for quavers */
+}
+
+/* Left quaver specific positioning */
+.bar .note.quaver.left {
+  transform: translateY(-50%) translateX(-27.6px);
+}
+
+/* Right quaver specific positioning */
+.bar .note.quaver.right {
+  transform: translateY(-50%) translateX(0);
+}
+
+.bar .note-front,
+.bar .note-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    transition: transform 0.6s;
+}
+
+.bar .note-back {
+    transform: rotateY(-180deg);
+}
+
+.bar .note.flipped .note-front {
+    transform: rotateY(180deg);
+}
+
+.bar .note.flipped .note-back {
+    transform: rotateY(0);
+}
+
+.bar .note.visible {
+    opacity: 1;
+    visibility: visible;
+}
+/* Special handling for flipped quavers */
+.bar .note.quaver.flipped.left {
+  transform: translateY(-50%) translateX(-27.6px) rotateY(180deg);
+}
+
+.bar .note.quaver.flipped.right {
+  transform: translateY(-50%) translateX(0) rotateY(180deg);
+}
+
+.bar .note.clickable {
+  cursor: pointer;
+}
+
+.bar .note-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.note-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+}
+
+/* Ensure quaver images maintain aspect ratio */
+.bar .note.quaver .note-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform-origin: center center;
+}
+
+/* Add this to prevent flash during transitions */
+.bar .note.transitioning {
+  transition: none;
+}

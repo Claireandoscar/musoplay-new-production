@@ -124,7 +124,7 @@ const EndGameAnimation = ({ score, barHearts }) => {
               {[...Array(4)].map((_, i) => (
                 <img 
                   key={i}
-                  src={`/assets/images/ui/${i < hearts ? 'purpleheart.svg' : 'purpleheart-empty.svg'}`}
+                  src={`/assets/images/ui/${i < hearts ? 'greenheart.svg' : 'grennheart-empty.svg'}`}
                   alt={i < hearts ? "Full Heart" : "Empty Heart"}
                   className="heart-image"
                 />
@@ -136,25 +136,25 @@ const EndGameAnimation = ({ score, barHearts }) => {
         {showShare && (
           <div className="share-section">
             <div className="share-buttons">
-  <button onClick={() => handleShare('facebook')} className="main-game-share-button">
-    <Facebook />
-  </button>
-  <button onClick={() => handleShare('instagram')} className="main-game-share-button">
-    <Instagram />
-  </button>
-  <button onClick={() => handleShare('whatsapp')} className="main-game-share-button">
-    <MessageCircle />
-  </button>
-  <button onClick={() => handleShare('linkedin')} className="main-game-share-button">
-    <Linkedin />
-  </button>
-</div>
-<button 
-  onClick={handleNativeShare}
-  className="main-game-share-text-button"  // Make sure this matches exactly
->
-  PLEASE SHARE!
-</button>
+              <button onClick={() => handleShare('facebook')} className="share-button">
+                <Facebook />
+              </button>
+              <button onClick={() => handleShare('instagram')} className="share-button">
+                <Instagram />
+              </button>
+              <button onClick={() => handleShare('whatsapp')} className="share-button">
+                <MessageCircle />
+              </button>
+              <button onClick={() => handleShare('linkedin')} className="share-button">
+                <Linkedin />
+              </button>
+            </div>
+            <button 
+              onClick={handleNativeShare}
+              className="share-text-button"
+            >
+              PLEASE SHARE!
+            </button>
           </div>
         )}
       </div>

@@ -8,7 +8,7 @@ function LifeIndicator({ hearts, isBarFailed }) {
       {[...Array(4)].map((_, i) => (
         <img
           key={i}
-          src={process.env.PUBLIC_URL + `/assets/images/ui/${i < hearts ? 'purpleheart.svg' : 'purpleheart-empty.svg'}`}
+          src={process.env.PUBLIC_URL + `/assets/images/ui/${i < hearts ? 'greenheart.svg' : 'greenheart-empty.svg'}`}
           alt={i < hearts ? "Active Life" : "Lost Life"}
           className={`heart ${hearts === 0 && isBarFailed ? 'breaking' : ''}`}
         />

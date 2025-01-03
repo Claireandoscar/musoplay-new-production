@@ -1,0 +1,54 @@
+@keyframes growAndShrink {
+    0% {
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 0;
+    }
+    10% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+    90% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 0;
+    }
+}
+
+.feedback-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    z-index: 1000;
+    width: 280px;
+}
+
+.feedback-content {
+    background: #FFFDEE;
+    border: 7px solid #AB08FF;
+    border-radius: 20px;
+    padding: 20px;
+    text-align: center;
+    font-family: 'patrick-hand-sc', cursive;
+    animation: growAndShrink 3s ease-in-out forwards;
+}
+
+.feedback-heart {
+    width: 24px;
+    height: 24px;
+}
+
+.feedback-quick-message {
+    font-size: 1.6rem;
+    margin-bottom: 10px;
+    color: black;
+    font-family: 'patrick-hand-sc', cursive;
+}
+
+.feedback-message {
+    font-size: 1.4rem;
+    color: black;
+    font-family: 'patrick-hand-sc', cursive;
+}

@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useReducer } from 'react';
-import './Game.css';  // Updated from App.css
+import './WarmUpGame.css'; //
 import { audioEngine } from '../AudioEngine';  // Go up one level
-import HeaderToolbar from '../components/HeaderToolbar'; 
+import HeaderToolbar from '../components/HeaderToolbar';
 import GameBoard from './components/GameBoard';
 import Controls from './components/Controls';
 import VirtualInstrument from './components/VirtualInstrument';
@@ -113,8 +113,8 @@ function gameReducer(state, action) {
     }
 }
 
-function GameApp() {
-  console.log('Main Game Mounted:', window.location.pathname);
+function WarmUpGame() {
+  console.log('Warm Up Game Mounted:', window.location.pathname);
   const { user } = useAuth();
   console.log('Current authenticated user:', user); 
   const [gameState, dispatch] = useReducer(gameReducer, initialGameState);
@@ -224,7 +224,7 @@ useEffect(() => {
 useEffect(() => {
   const fetchAndInitAudio = async () => {
     try {
-      console.log('Starting audio setup...');
+      console.log('Starting warm-up audio setup...');
       setIsPreloading(true);
 
       // First, initialize the audio engine
@@ -246,25 +246,25 @@ useEffect(() => {
       await audioEngine.loadSound('/assets/audio/ui-sounds/bar-complete.mp3', 'complete');
       await audioEngine.loadSound('/assets/audio/ui-sounds/note-flip.mp3', 'flip');
 
-      // Then fetch melody files
-      console.log('Fetching melody files...');
+      // Then fetch warm-up melody files
+      console.log('Fetching warm-up melody files...');
       try {
-        const melodyData = await audioFetchService.fetchSupabaseAudio();
+        const melodyData = await audioFetchService.fetchWarmupAudio();  // Changed to warm-up fetch
         const localDateString = audioFetchService.getLocalDateString();
         
         if (melodyData.date === localDateString) {
-          console.log('Setting up today\'s melody');
+          console.log('Setting up today\'s warm-up melody');
           setAudioFiles(melodyData.melodyParts);
           setFullTunePath(melodyData.fullTune);
           
           // Load the first bar
           await loadAudio(0);
         } else {
-          throw new Error('Melody not for today');
+          throw new Error('Warm-up melody not for today');
         }
       } catch (error) {
-        console.log('Using fallback melody:', error);
-        const fallbackData = await audioFetchService.fetchFallbackAudio();
+        console.log('Using fallback warm-up melody:', error);
+        const fallbackData = await audioFetchService.fetchWarmupFallbackAudio();  // Changed to warm-up fallback
         setAudioFiles(fallbackData.melodyParts);
         setFullTunePath(fallbackData.fullTune);
         await loadAudio(0);
@@ -272,9 +272,9 @@ useEffect(() => {
 
       setIsAudioLoaded(true);
       dispatch({ type: 'SET_GAME_PHASE', payload: 'ready' });
-      console.log('Audio setup complete');
+      console.log('Warm-up audio setup complete');
     } catch (error) {
-      console.error('Audio setup failed:', error);
+      console.error('Warm-up audio setup failed:', error);
       setIsAudioLoaded(false);
     } finally {
       setIsPreloading(false);
@@ -284,8 +284,7 @@ useEffect(() => {
   fetchAndInitAudio();
 
   return () => {
-    console.log('Cleaning up audio setup');
-    // Any cleanup needed
+    console.log('Cleaning up warm-up audio setup');
   };
 }, []); // Remove loadAudio dependency
   // Keep this useEffect for loading melodies when bar changes
@@ -730,9 +729,9 @@ const handleNotePlay = useCallback(async (noteNumber) => {
   }
 }, [gameState, correctSequence, currentBarIndex, dispatch, moveToNextBar, setScore, setShowFirstNoteHint]);
 return (
-  <div className="game-wrapper main-game-instance"> 
+  <div className="game-wrapper warm-up-game-instance"> 
     <div className={`game-container ${gameMode}`}>
-    <HeaderToolbar /> 
+    <HeaderToolbar />
       <GameBoard 
         barHearts={gameState.barHearts}
         currentBarIndex={currentBarIndex}
@@ -745,6 +744,7 @@ return (
         }}
         isBarFailed={gameState.isBarFailing}
         gamePhase={gameState.gamePhase}
+        isWarmUp={true}
       />
       <Controls 
         onListenPractice={handleListenPractice}
@@ -774,16 +774,25 @@ return (
         />
       )}
       {(showInstructions || isPreloading) && gameMode === 'initial' && currentBarIndex === 0 && (
-  <div className="instructions-popup">
-          <div className="instructions-content">
-            <h2>HOW TO PLAY</h2>
-            <div className="instruction-flow">
-              <p>
-                <span style={{ fontSize: '0.8em', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
-                  <img src="/assets/images/ui/heart.svg" alt="heart" style={{ width: '20px', height: '20px', margin: '0 5px' }} />
-                  TURN OFF SILENT MODE
-                  <img src="/assets/images/ui/heart.svg" alt="heart" style={{ width: '20px', height: '20px', margin: '0 5px' }} />
-                </span>
+ <div className="instructions-popup">
+ <div className="instructions-content">
+   <h2>HOW TO PLAY</h2>
+   <div style={{ 
+     color: '#00C22D', 
+     fontSize: '24px', 
+     marginTop: '-20px', 
+     marginBottom: '20px',
+     fontFamily: 'patrick-hand-sc, sans-serif'
+   }}>
+     WARM UP MODE
+   </div>
+   <div className="instruction-flow">
+     <p>
+       <span style={{ fontSize: '0.8em', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
+         <img src="/assets/images/ui/heart.svg" alt="heart" style={{ width: '20px', height: '20px', margin: '0 5px' }} />
+         TURN OFF SILENT MODE
+         <img src="/assets/images/ui/heart.svg" alt="heart" style={{ width: '20px', height: '20px', margin: '0 5px' }} />
+       </span>
                 1. PRESS LISTEN & PRACTICE<br/>
                 2. PLAY WHAT YOU HEAR USING THE COLOURFUL BUTTONS<br/>
                 3. PRACTICE AS MANY TIMES AS YOU NEED<br/>
@@ -797,7 +806,7 @@ return (
   onClick={handleStartGame}
   disabled={isPreloading || !isAudioLoaded}
 >
-  <img src="/assets/images/ui/play.svg" alt="Next" />
+  <img src="/assets/images/ui/green-play.svg" alt="Next" />
 </button>
           </div>
         </div>
@@ -807,4 +816,5 @@ return (
  );
 }
 
-export default GameApp;  // Change this line
+
+export default WarmUpGame;

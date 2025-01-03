@@ -1,0 +1,40 @@
+.header-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    width: 100%;
+  }
+  
+  .button-row {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+  
+  .toolbar-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+  }
+  
+  .button-img {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .logo-wrapper {
+    display: flex;
+    align-items: center;
+  }
+  
+  .logo {
+    height: 30px;
+  }
+  
+  .warm-up-text {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 1.2rem;
+  }

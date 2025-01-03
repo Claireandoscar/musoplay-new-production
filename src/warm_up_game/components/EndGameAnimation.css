@@ -162,7 +162,7 @@
   opacity: 0;
 }
 
-.main-game-share-section {
+.share-section {
   position: absolute;
   bottom: 100px;
   left: 50%;
@@ -175,16 +175,16 @@
   animation: fadeIn 0.5s ease-out forwards;
 }
 
-.main-game-share-buttons {
+.share-buttons {
   display: flex;
   gap: 16px;
 }
 
-.main-game-share-button {
+.share-button {
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  border: 2.5px solid #AB08FF;
+  border: 2.5px solid #00C22d;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -194,39 +194,39 @@
   animation: gentlePulse 3s infinite;
 }
 
-.main-game-share-button svg {
+.share-button svg {
   width: 22px;
   height: 22px;
-  stroke: #AB08FF;
+  stroke: #00C22d;
   stroke-width: 2.5px;
   fill: none;
 }
 
-.main-game-share-button:hover {
-  background-color: #AB08FF;
+.share-button:hover {
+  background-color: #00C22d;
 }
 
-.main-game-share-button:hover svg {
+.share-button:hover svg {
   stroke: #FFFDEE;
 }
 
-.main-game-share-text-button {
-  color: #AB08FF;
+.share-text-button {
+  color: #00C22d;
   font-size: 20px;
   font-weight: bold;
   margin: 0;
   text-align: center;
   font-family: 'patrick-hand-sc', sans-serif;
   background: #FFFDEE;
-  border: 2.5px solid #AB08FF;
+  border: 2.5px solid #00C22d;
   padding: 8px 16px;
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.main-game-share-text-button:hover {
-  background: #AB08FF;
+.share-text-button:hover {
+  background: #00C22d;
   color: #FFFDEE;
 }
 
