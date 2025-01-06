@@ -8,6 +8,12 @@ const EndGameAnimation = ({ score, barHearts }) => {
   const [showText, setShowText] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [showHeader, setShowHeader] = useState(false);
+  const [isSunday, setIsSunday] = useState(false);
+  
+  useEffect(() => {
+    setIsSunday(new Date().getDay() === 0);
+  }, []);
+
   
   const getScoringPhrase = (score) => {
     if (score === 16) return "Legendary";
@@ -103,28 +109,30 @@ const EndGameAnimation = ({ score, barHearts }) => {
       </div>
 
       <div className="animation-content">
-      {showText && (
-  <>
-    <h2 className="scoring-phrase" style={{ color: "#1174B9" }}>{getScoringPhrase(score)}</h2>
-    <div className="score-display" style={{ color: "#1174B9" }}>
-      SCORE: {score}/16
-    </div>
-    <div className="date-display" style={{ color: "#1174B9" }}>
-      {new Date().toLocaleDateString('en-US', { 
-        month: 'long', 
-        day: 'numeric',
-        year: 'numeric'
-      }).toUpperCase()}
-    </div>
-  </>
-)}
+        {showText && (
+          <>
+            <h2 className="scoring-phrase" style={{ color: "#1174B9" }}>{getScoringPhrase(score)}</h2>
+            <div className="score-display" style={{ color: "#1174B9" }}>
+              SCORE: {score}/16
+            </div>
+            <div className="date-display" style={{ color: "#1174B9" }}>
+              {new Date().toLocaleDateString('en-US', { 
+                month: 'long', 
+                day: 'numeric',
+                year: 'numeric'
+              }).toUpperCase()}
+            </div>
+          </>
+        )}
         <div className="hearts-display">
           {barHearts.map((hearts, index) => (
             <div key={index} className={`bar-hearts ${animationStage > index ? 'visible' : ''}`}>
               {[...Array(4)].map((_, i) => (
                 <img 
                   key={i}
-                  src={`/assets/images/ui/${i < hearts ? 'purpleheart.svg' : 'purpleheart-empty.svg'}`}
+                  src={`/assets/images/ui/${i < hearts ? 
+                    (isSunday ? 'heart.svg' : 'purpleheart.svg') : 
+                    (isSunday ? 'heart-empty.svg' : 'purpleheart-empty.svg')}`}
                   alt={i < hearts ? "Full Heart" : "Empty Heart"}
                   className="heart-image"
                 />
@@ -136,25 +144,45 @@ const EndGameAnimation = ({ score, barHearts }) => {
         {showShare && (
           <div className="share-section">
             <div className="share-buttons">
-  <button onClick={() => handleShare('facebook')} className="main-game-share-button">
-    <Facebook />
-  </button>
-  <button onClick={() => handleShare('instagram')} className="main-game-share-button">
-    <Instagram />
-  </button>
-  <button onClick={() => handleShare('whatsapp')} className="main-game-share-button">
-    <MessageCircle />
-  </button>
-  <button onClick={() => handleShare('linkedin')} className="main-game-share-button">
-    <Linkedin />
-  </button>
-</div>
-<button 
-  onClick={handleNativeShare}
-  className="main-game-share-text-button"  // Make sure this matches exactly
->
-  PLEASE SHARE!
-</button>
+              <button 
+                onClick={() => handleShare('facebook')} 
+                className="main-game-share-button"
+                style={{ borderColor: isSunday ? '#FF2376' : '#AB08FF' }}
+              >
+                <Facebook style={{ stroke: isSunday ? '#FF2376' : '#AB08FF' }} />
+              </button>
+              <button 
+                onClick={() => handleShare('instagram')} 
+                className="main-game-share-button"
+                style={{ borderColor: isSunday ? '#FF2376' : '#AB08FF' }}
+              >
+                <Instagram style={{ stroke: isSunday ? '#FF2376' : '#AB08FF' }} />
+              </button>
+              <button 
+                onClick={() => handleShare('whatsapp')} 
+                className="main-game-share-button"
+                style={{ borderColor: isSunday ? '#FF2376' : '#AB08FF' }}
+              >
+                <MessageCircle style={{ stroke: isSunday ? '#FF2376' : '#AB08FF' }} />
+              </button>
+              <button 
+                onClick={() => handleShare('linkedin')} 
+                className="main-game-share-button"
+                style={{ borderColor: isSunday ? '#FF2376' : '#AB08FF' }}
+              >
+                <Linkedin style={{ stroke: isSunday ? '#FF2376' : '#AB08FF' }} />
+              </button>
+            </div>
+            <button 
+              onClick={handleNativeShare}
+              className="main-game-share-text-button"
+              style={{ 
+                borderColor: isSunday ? '#FF2376' : '#AB08FF',
+                color: isSunday ? '#FF2376' : '#AB08FF'
+              }}
+            >
+              PLEASE SHARE!
+            </button>
           </div>
         )}
       </div>

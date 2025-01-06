@@ -21,14 +21,14 @@ type Database = {
   };
 };
 
-// Add type for difficulty data
+type GameType = 'main' | 'warmup';
+
 type DifficultyData = {
   difficulty: 'easy' | 'medium' | 'difficult';
   weekday: string;
   notes?: string;
 };
 
-// Helper function for admin logging
 async function logAdminError(
   supabaseClient: SupabaseClient<Database>,
   error: string,
@@ -47,7 +47,6 @@ async function logAdminError(
   }
 }
 
-// Validates the note sequence in a bar filename
 function validateNoteSequence(filename: string): { isValid: boolean; error?: string } {
   const match = filename.match(/^bar[1-4].*\.mp3$/);
   if (!match) {
@@ -56,7 +55,6 @@ function validateNoteSequence(filename: string): { isValid: boolean; error?: str
   return { isValid: true };
 }
 
-// Add difficulty validation function
 function validateDifficultyForDay(difficultyData: DifficultyData, dayOfWeek: number): { isValid: boolean; error?: string } {
   const isSunday = dayOfWeek === 0;
   const expectedDifficulty = isSunday ? 'difficult' : 'medium';
@@ -71,8 +69,18 @@ function validateDifficultyForDay(difficultyData: DifficultyData, dayOfWeek: num
   return { isValid: true };
 }
 
+function validateWarmupDifficulty(difficultyData: DifficultyData): { isValid: boolean; error?: string } {
+  if (difficultyData.difficulty !== 'easy') {
+    return {
+      isValid: false,
+      error: `Invalid difficulty level for warm-up: expected easy, got ${difficultyData.difficulty}`
+    };
+  }
+  return { isValid: true };
+}
+
 // Main edge function
-Deno.serve(async (_req) => {
+Deno.serve(async (req) => {
   try {
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -85,31 +93,41 @@ Deno.serve(async (_req) => {
 
     const supabaseAdmin = createClient<Database>(supabaseUrl, serviceRoleKey);
 
+    // Get request parameters
+    const url = new URL(req.url);
+    const gameType = url.searchParams.get('type') as GameType || 'main';
+
     // Get today's date in UTC
     const now = new Date();
     const year = now.getUTCFullYear().toString();
     const month = String(now.getUTCMonth() + 1).padStart(2, '0');
     const day = String(now.getUTCDate()).padStart(2, '0');
-    const dayOfWeek = now.getUTCDay(); // Get day of week for difficulty validation
-    const folderPath = `${year}/december/melody_${year}_${month}_${day}`;
+    const dayOfWeek = now.getUTCDay();
 
-    // List files in melody folder
+    // Construct folder path based on game type
+    const folderPath = gameType === 'warmup'
+      ? `${year}/december/warmup_easy_${year}_${month}_${day}`
+      : `${year}/december/melody_${dayOfWeek === 0 ? 'difficult' : 'medium'}_${year}_${month}_${day}`;
+
+    // List files in folder
     const { data: files, error: listError } = await supabaseAdmin
       .storage
       .from('musoplay_melodies')
       .list(folderPath);
 
     if (listError) {
-      await logAdminError(supabaseAdmin, 'Failed to list melody files', {
+      await logAdminError(supabaseAdmin, 'Failed to list files', {
         folder: folderPath,
-        error: listError
+        error: listError,
+        gameType
       });
       throw new Error(`Failed to list files: ${listError.message}`);
     }
 
     if (!files || files.length === 0) {
-      await logAdminError(supabaseAdmin, 'No melody files found', {
-        folder: folderPath
+      await logAdminError(supabaseAdmin, 'No files found', {
+        folder: folderPath,
+        gameType
       });
       throw new Error(`No files found in ${folderPath}`);
     }
@@ -118,7 +136,8 @@ Deno.serve(async (_req) => {
     const difficultyFile = files.find((file: { name: string }) => file.name === 'difficulty.json');
     if (!difficultyFile) {
       await logAdminError(supabaseAdmin, 'Missing difficulty.json', {
-        folder: folderPath
+        folder: folderPath,
+        gameType
       });
       throw new Error('Missing difficulty.json file');
     }
@@ -132,23 +151,29 @@ Deno.serve(async (_req) => {
     if (difficultyError || !difficultyContent) {
       await logAdminError(supabaseAdmin, 'Failed to read difficulty.json', {
         folder: folderPath,
-        error: difficultyError
+        error: difficultyError,
+        gameType
       });
       throw new Error('Failed to read difficulty.json');
     }
 
     const difficultyData: DifficultyData = JSON.parse(await difficultyContent.text());
-    const difficultyValidation = validateDifficultyForDay(difficultyData, dayOfWeek);
+    
+    // Validate difficulty based on game type
+    const difficultyValidation = gameType === 'warmup'
+      ? validateWarmupDifficulty(difficultyData)
+      : validateDifficultyForDay(difficultyData, dayOfWeek);
     
     if (!difficultyValidation.isValid) {
       await logAdminError(supabaseAdmin, 'Invalid difficulty configuration', {
         folder: folderPath,
-        error: difficultyValidation.error
+        error: difficultyValidation.error,
+        gameType
       });
       throw new Error(difficultyValidation.error);
     }
 
-    // Your existing melody file validation logic
+    // Validate melody files
     const barFiles = files.filter((file: { name: string }) => 
       file.name.match(/^bar[1-4]n.*\.mp3$/));
     
@@ -156,7 +181,8 @@ Deno.serve(async (_req) => {
       await logAdminError(supabaseAdmin, 'Incorrect number of bar files', {
         folder: folderPath,
         found: barFiles.length,
-        expected: 4
+        expected: 4,
+        gameType
       });
       throw new Error('Must have exactly 4 bar files');
     }
@@ -174,7 +200,8 @@ Deno.serve(async (_req) => {
     if (sequenceErrors.length > 0) {
       await logAdminError(supabaseAdmin, 'Invalid note sequences found', {
         folder: folderPath,
-        errors: sequenceErrors
+        errors: sequenceErrors,
+        gameType
       });
       throw new Error('Invalid note sequences in bar files');
     }
@@ -184,7 +211,8 @@ Deno.serve(async (_req) => {
     
     if (!tuneFile) {
       await logAdminError(supabaseAdmin, 'Missing tune file', {
-        folder: folderPath
+        folder: folderPath,
+        gameType
       });
       throw new Error('Missing complete tune file');
     }
@@ -192,11 +220,12 @@ Deno.serve(async (_req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'Daily melody verified successfully',
+        message: `${gameType === 'warmup' ? 'Warm-up' : 'Daily'} melody verified successfully`,
         folderPath,
         difficulty: difficultyData.difficulty,
         barFiles: barFiles.map((f: { name: string }) => f.name),
-        tuneFile: tuneFile.name
+        tuneFile: tuneFile.name,
+        gameType
       }),
       {
         headers: {

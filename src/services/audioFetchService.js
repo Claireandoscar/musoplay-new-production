@@ -13,13 +13,46 @@ export class AudioFetchService {
     }
   }
 
-  // For main game - daily dates
+  // For main game - daily dates with difficulty
   getDateParts() {
     const now = new Date();
     const year = now.getFullYear();
     const month = now.getMonth();
     const paddedMonth = String(month + 1).padStart(2, '0');
     const day = String(now.getDate()).padStart(2, '0');
+    const dayOfWeek = now.getDay();
+    const difficulty = dayOfWeek === 0 ? 'difficult' : 'medium';
+    
+    const monthNames = [
+      'january', 'february', 'march', 'april', 'may', 'june',
+      'july', 'august', 'september', 'october', 'november', 'december'
+    ];
+    
+    return {
+      year: year.toString(),
+      month: monthNames[month],
+      paddedMonth,
+      day,
+      difficulty,
+      formatted: `${year}_${paddedMonth}_${day}`
+    };
+  }
+
+  // For warm-up game - weekly dates (always easy difficulty)
+  getWeeklyDateParts() {
+    const now = new Date();
+    const currentDay = now.getDay(); // 0 is Sunday, 1 is Monday, etc.
+    
+    // If it's not Sunday, go back to the most recent Sunday
+    const daysToSubtract = currentDay;
+    const lastSunday = new Date(now);
+    lastSunday.setDate(now.getDate() - daysToSubtract);
+    
+    const year = lastSunday.getFullYear();
+    const month = lastSunday.getMonth();
+    const day = String(lastSunday.getDate()).padStart(2, '0');
+    const paddedMonth = String(month + 1).padStart(2, '0');
+    
     const monthNames = [
       'january', 'february', 'march', 'april', 'may', 'june',
       'july', 'august', 'september', 'october', 'november', 'december'
@@ -34,51 +67,27 @@ export class AudioFetchService {
     };
   }
 
-  // For warm-up game - weekly dates
-  getWeeklyDateParts() {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
-    const currentDay = now.getDate();
-    const paddedMonth = String(month + 1).padStart(2, '0');
-    
-    // Using current day for now - can be changed to Friday later
-    const paddedDay = String(currentDay).padStart(2, '0');
-    
-    const monthNames = [
-      'january', 'february', 'march', 'april', 'may', 'june',
-      'july', 'august', 'september', 'october', 'november', 'december'
-    ];
-    
-    return {
-      year: year.toString(),
-      month: monthNames[month],
-      paddedMonth,
-      day: paddedDay,
-      formatted: `${year}_${paddedMonth}_${paddedDay}`
-    };
-  }
-
   async fetchSupabaseAudio() {
     try {
       await this.initialize();
       
-      const { year, month, formatted } = this.getDateParts();
-      const melodyPath = `${year}/${month}/melody_${formatted}`;
+      const { year, month, formatted, difficulty } = this.getDateParts();
+      const melodyPath = `${year}/${month}/melody_${difficulty}_${formatted}`;
       
-      // Test bucket access and list files
+      console.log('Fetching from path:', melodyPath);
+      
       const { data: melodyFiles, error: melodyError } = await supabase.storage
         .from('musoplay_melodies')
         .list(melodyPath);
 
       if (melodyError) {
         console.error('Failed to list melody folder:', melodyError);
-        throw melodyError;
+        return this.fetchFallbackAudio();
       }
 
       if (!melodyFiles || melodyFiles.length === 0) {
         console.error('No files found in melody folder');
-        throw new Error('No files found');
+        return this.fetchFallbackAudio();
       }
 
       // Find and sort bar files
@@ -94,7 +103,8 @@ export class AudioFetchService {
       const tuneFile = melodyFiles.find(f => f.name.includes('tune.mp3'));
 
       if (barFiles.length !== 4 || !tuneFile) {
-        throw new Error('Missing required audio files');
+        console.error('Missing required audio files');
+        return this.fetchFallbackAudio();
       }
 
       // Get public URLs for all files
@@ -114,11 +124,12 @@ export class AudioFetchService {
       return {
         melodyParts,
         fullTune: tuneData.publicUrl,
-        date: formatted
+        date: formatted,
+        difficulty
       };
     } catch (error) {
       console.error('Supabase fetch failed:', error);
-      throw error;
+      return this.fetchFallbackAudio();
     }
   }
 
@@ -127,9 +138,10 @@ export class AudioFetchService {
       await this.initialize();
       
       const { year, month, formatted } = this.getWeeklyDateParts();
-      const warmupPath = `${year}/${month}/warmup_${formatted}`;
+      const warmupPath = `${year}/${month}/warmup_easy_${formatted}`;
       
-      console.log('Fetching weekly warm-up from:', warmupPath);
+      console.log('DEBUG - Weekly parts:', { year, month, formatted });
+      console.log('DEBUG - Attempting to fetch from:', warmupPath);
       
       const { data: warmupFiles, error: warmupError } = await supabase.storage
         .from('musoplay_melodies')
@@ -137,12 +149,16 @@ export class AudioFetchService {
 
       if (warmupError) {
         console.error('Failed to list warm-up folder:', warmupError);
-        throw warmupError;
+        const fallback = await this.fetchWarmupFallbackAudio();
+        console.log('Using warm-up fallback:', fallback);
+        return fallback;
       }
 
       if (!warmupFiles || warmupFiles.length === 0) {
         console.error('No files found in warm-up folder');
-        throw new Error('No files found');
+        const fallback = await this.fetchWarmupFallbackAudio();
+        console.log('Using warm-up fallback due to no files:', fallback);
+        return fallback;
       }
 
       // Find and sort bar files
@@ -158,7 +174,10 @@ export class AudioFetchService {
       const tuneFile = warmupFiles.find(f => f.name.includes('tune.mp3'));
 
       if (barFiles.length !== 4 || !tuneFile) {
-        throw new Error('Missing required audio files');
+        console.error('Missing required audio files');
+        const fallback = await this.fetchWarmupFallbackAudio();
+        console.log('Using warm-up fallback due to missing files:', fallback);
+        return fallback;
       }
 
       // Get public URLs for all files
@@ -179,26 +198,24 @@ export class AudioFetchService {
         melodyParts,
         fullTune: tuneData.publicUrl,
         date: formatted,
-        isWeekly: true
+        isWeekly: true,
+        difficulty: 'easy'
       };
     } catch (error) {
       console.error('Weekly warm-up fetch failed:', error);
-      throw error;
+      const fallback = await this.fetchWarmupFallbackAudio();
+      console.log('Using warm-up fallback due to error:', fallback);
+      return fallback;
     }
   }
 
   async fetchFallbackAudio() {
     console.log('Using fallback audio');
-    const fallbackPath = '/assets/audio/testMelodies/2024-12-15';
     return {
-      melodyParts: [
-        `${fallbackPath}/bar1n1n5n8n3.mp3`,
-        `${fallbackPath}/bar2n6QLn5QRn4QLn6QRn5n3.mp3`,
-        `${fallbackPath}/bar3n6QLn5QRn4QLn6QRn5n2.mp3`,
-        `${fallbackPath}/bar4n3n2QLn3QRn1n1.mp3`
-      ],
-      fullTune: `${fallbackPath}/test3tune.mp3`,
-      date: null
+      melodyParts: Array(4).fill('/assets/audio/testMelodies/2024-12-15/bar1n1n5n8n3.mp3'),
+      fullTune: '/assets/audio/testMelodies/2024-12-15/test3tune.mp3',
+      date: this.getLocalDateString(),
+      difficulty: 'medium'
     };
   }
 
@@ -207,14 +224,15 @@ export class AudioFetchService {
     const fallbackPath = '/assets/audio/testMelodies/warmup-fallback';
     return {
       melodyParts: [
-        `${fallbackPath}/bar1n1n5n8n3.mp3`,
-        `${fallbackPath}/bar2n6QLn5QRn4QLn6QRn5n3.mp3`,
-        `${fallbackPath}/bar3n6QLn5QRn4QLn6QRn5n2.mp3`,
-        `${fallbackPath}/bar4n3n2QLn3QRn1n1.mp3`
+        `${fallbackPath}/bar1n1n2n3n4.mp3`,
+        `${fallbackPath}/bar2n5n4n3n2.mp3`,
+        `${fallbackPath}/bar3n3n4n5n4.mp3`,
+        `${fallbackPath}/bar4n3n2n1n1.mp3`
       ],
-      fullTune: `${fallbackPath}/test3tune.mp3`,
-      date: null,
-      isWeekly: true
+      fullTune: `${fallbackPath}/test1tune.mp3`,
+      date: this.getLocalWeeklyString(),
+      isWeekly: true,
+      difficulty: 'easy'
     };
   }
 

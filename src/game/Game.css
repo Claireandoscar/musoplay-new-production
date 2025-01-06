@@ -163,7 +163,7 @@ body {
   z-index: 1000;
   padding: 30px 20px;
   box-sizing: border-box;
-  border: 7px solid #AB08FF;
+  border: 7px solid; /* Remove the hardcoded color */
   font-family: 'patrick-hand-sc', sans-serif;
   left: 50%;
   top: 50%;

@@ -119,7 +119,8 @@ function GameApp() {
   console.log('Current authenticated user:', user); 
   const [gameState, dispatch] = useReducer(gameReducer, initialGameState);
   
-  
+  const [isSunday, setIsSunday] = useState(false);
+
   // Audio-related states
   const [isPreloading, setIsPreloading] = useState(true);
   const [audioFiles, setAudioFiles] = useState([]);
@@ -444,6 +445,17 @@ useEffect(() => {
         }
     };
 }, [melodyAudio]);
+
+useEffect(() => {
+  const checkDay = () => {
+      setIsSunday(new Date().getDay() === 0);
+  };
+  
+  checkDay();
+  const interval = setInterval(checkDay, 3600000); // Check every hour
+  
+  return () => clearInterval(interval);
+}, []);
 
 const moveToNextBar = useCallback((isSuccess = true) => {
   // Reset hint state when moving to next bar
@@ -773,38 +785,52 @@ return (
           barHearts={gameState.barHearts}
         />
       )}
-      {(showInstructions || isPreloading) && gameMode === 'initial' && currentBarIndex === 0 && (
-  <div className="instructions-popup">
-          <div className="instructions-content">
-            <h2>HOW TO PLAY</h2>
-            <div className="instruction-flow">
-              <p>
-                <span style={{ fontSize: '0.8em', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
-                  <img src="/assets/images/ui/heart.svg" alt="heart" style={{ width: '20px', height: '20px', margin: '0 5px' }} />
-                  TURN OFF SILENT MODE
-                  <img src="/assets/images/ui/heart.svg" alt="heart" style={{ width: '20px', height: '20px', margin: '0 5px' }} />
-                </span>
-                1. PRESS LISTEN & PRACTICE<br/>
-                2. PLAY WHAT YOU HEAR USING THE COLOURFUL BUTTONS<br/>
-                3. PRACTICE AS MANY TIMES AS YOU NEED<br/>
-                4. PRESS PERFORM TO PLAY THE MELODY FOR REAL<br/>
-                5. HIT THE RIGHT NOTES TO HANG ON TO YOUR HEARTS!
-              </p>
-            </div>
-            <p className="challenge">CAN YOU HIT THE RIGHT NOTES?</p>
-            <button 
-  className="instructions-next" 
-  onClick={handleStartGame}
-  disabled={isPreloading || !isAudioLoaded}
->
-  <img src="/assets/images/ui/play.svg" alt="Next" />
-</button>
-          </div>
+{(showInstructions || isPreloading) && gameMode === 'initial' && currentBarIndex === 0 && (
+  <div 
+    className="instructions-popup"
+    style={{ borderColor: isSunday ? '#FF2376' : '#AB08FF' }}
+  >
+    <div className="instructions-content">
+      <h2>HOW TO PLAY</h2>
+      <div className="instruction-flow">
+        <p>
+          <span style={{ fontSize: '0.8em', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
+            <img 
+              src={`/assets/images/ui/${isSunday ? 'heart' : 'purpleheart'}.svg`}
+              alt="heart" 
+              style={{ width: '20px', height: '20px', margin: '0 5px' }} 
+            />
+            TURN OFF SILENT MODE
+            <img 
+              src={`/assets/images/ui/${isSunday ? 'heart' : 'purpleheart'}.svg`}
+              alt="heart" 
+              style={{ width: '20px', height: '20px', margin: '0 5px' }} 
+            />
+          </span>
+          1. PRESS LISTEN & PRACTICE<br/>
+          2. PLAY WHAT YOU HEAR USING THE COLOURFUL BUTTONS<br/>
+          3. PRACTICE AS MANY TIMES AS YOU NEED<br/>
+          4. PRESS PERFORM TO PLAY THE MELODY FOR REAL<br/>
+          5. HIT THE RIGHT NOTES TO HANG ON TO YOUR HEARTS!
+        </p>
+      </div>
+      <p className="challenge">CAN YOU HIT THE RIGHT NOTES?</p>
+      <button
+        className="instructions-next"
+        onClick={handleStartGame}
+        disabled={isPreloading || !isAudioLoaded}
+      >
+        <img 
+          src={`/assets/images/ui/${isSunday ? 'red-play' : 'play'}.svg`} 
+          alt="Next" 
+        />
+     </button>
         </div>
-      )}
+      </div>
+    )}
     </div>
   </div>
- );
+);
 }
 
-export default GameApp;  // Change this line
+export default GameApp;

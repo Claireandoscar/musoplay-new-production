@@ -124,7 +124,7 @@ const EndGameAnimation = ({ score, barHearts }) => {
               {[...Array(4)].map((_, i) => (
                 <img 
                   key={i}
-                  src={`/assets/images/ui/${i < hearts ? 'greenheart.svg' : 'grennheart-empty.svg'}`}
+                  src={`/assets/images/ui/${i < hearts ? 'greenheart.svg' : 'greenheart-empty.svg'}`}
                   alt={i < hearts ? "Full Heart" : "Empty Heart"}
                   className="heart-image"
                 />

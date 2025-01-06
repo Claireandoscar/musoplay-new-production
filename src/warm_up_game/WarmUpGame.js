@@ -220,7 +220,6 @@ useEffect(() => {
 }, []);
 
 
-// eslint-disable-next-line react-hooks/exhaustive-deps
 useEffect(() => {
   const fetchAndInitAudio = async () => {
     try {
@@ -249,22 +248,22 @@ useEffect(() => {
       // Then fetch warm-up melody files
       console.log('Fetching warm-up melody files...');
       try {
-        const melodyData = await audioFetchService.fetchWarmupAudio();  // Changed to warm-up fetch
-        const localDateString = audioFetchService.getLocalDateString();
+        const melodyData = await audioFetchService.fetchWarmupAudio();
+        const localWeeklyString = audioFetchService.getLocalWeeklyString();
         
-        if (melodyData.date === localDateString) {
-          console.log('Setting up today\'s warm-up melody');
+        if (melodyData.date === localWeeklyString) {
+          console.log('Setting up this week\'s warm-up melody');
           setAudioFiles(melodyData.melodyParts);
           setFullTunePath(melodyData.fullTune);
           
           // Load the first bar
           await loadAudio(0);
         } else {
-          throw new Error('Warm-up melody not for today');
+          throw new Error('Warm-up melody not for this week');
         }
       } catch (error) {
         console.log('Using fallback warm-up melody:', error);
-        const fallbackData = await audioFetchService.fetchWarmupFallbackAudio();  // Changed to warm-up fallback
+        const fallbackData = await audioFetchService.fetchWarmupFallbackAudio();
         setAudioFiles(fallbackData.melodyParts);
         setFullTunePath(fallbackData.fullTune);
         await loadAudio(0);

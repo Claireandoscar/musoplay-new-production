@@ -6,6 +6,16 @@ const ScoreHistory = ({ userId }) => {
   const [loading, setLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
+  // Helper function to get heart image based on date
+  const getHeartImage = (date, isActive) => {
+    const gameDate = new Date(date);
+    const isSunday = gameDate.getDay() === 0;
+    if (isSunday) {
+      return isActive ? 'heart.svg' : 'heart-empty.svg';
+    }
+    return isActive ? 'purpleheart.svg' : 'purpleheart-empty.svg';
+  };
+
   useEffect(() => {
     const fetchGameHistory = async () => {
       try {
@@ -30,19 +40,18 @@ const ScoreHistory = ({ userId }) => {
 
         console.log('Fetched scores:', scores);
 
-        // Update the reduce function in latestAttempts:
-const latestAttempts = scores?.reduce((acc, game) => {
-  const dateKey = new Date(game.played_at).toISOString().split('T')[0];
-  if (!acc[dateKey] || new Date(game.played_at) > new Date(acc[dateKey].played_at)) {
-    acc[dateKey] = {
-      ...game,
-      calculatedScore: Array.isArray(game.bar_scores) 
-        ? game.bar_scores.reduce((sum, hearts) => sum + hearts, 0)
-        : 0
-    };
-  }
-  return acc;
-}, {});
+        const latestAttempts = scores?.reduce((acc, game) => {
+          const dateKey = new Date(game.played_at).toISOString().split('T')[0];
+          if (!acc[dateKey] || new Date(game.played_at) > new Date(acc[dateKey].played_at)) {
+            acc[dateKey] = {
+              ...game,
+              calculatedScore: Array.isArray(game.bar_scores) 
+                ? game.bar_scores.reduce((sum, hearts) => sum + hearts, 0)
+                : 0
+            };
+          }
+          return acc;
+        }, {});
 
         const filledHistory = [];
         let currentDate = new Date(startOfMonth);
@@ -73,8 +82,6 @@ const latestAttempts = scores?.reduce((acc, game) => {
     const interval = setInterval(fetchGameHistory, 10000);
     return () => clearInterval(interval);
   }, [userId, currentMonth]);
-
-
 
   if (loading) {
     return <div className="loading loading-spinner loading-lg"></div>;
@@ -138,7 +145,7 @@ const latestAttempts = scores?.reduce((acc, game) => {
                       {[...Array(4)].map((_, i) => (
                         <img 
                           key={i}
-                          src={`/assets/images/ui/${i < hearts ? 'heart.svg' : 'heart-empty.svg'}`}
+                          src={`/assets/images/ui/${getHeartImage(game.date, i < hearts)}`}
                           alt={i < hearts ? "Full Heart" : "Empty Heart"}
                           className="w-[10px] h-[10px]"
                         />

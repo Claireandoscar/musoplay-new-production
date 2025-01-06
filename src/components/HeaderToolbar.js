@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import './HeaderToolbar.css';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../services/AuthContext';
@@ -6,9 +6,36 @@ import { useAuth } from '../services/AuthContext';
 const HeaderToolbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [isSunday, setIsSunday] = useState(false);
   useAuth();
 
   const isWarmUpMode = location.pathname === '/warm-up';
+
+  // Check if it's Sunday and update state
+  useEffect(() => {
+    const checkDay = () => {
+      setIsSunday(new Date().getDay() === 0);
+    };
+    
+    checkDay();
+    // Check every hour in case day changes while app is open
+    const interval = setInterval(checkDay, 3600000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Helper function to get the correct icon path
+  const getIconPath = (iconName) => {
+    if (isWarmUpMode) {
+      // Warm-up mode always uses green icons
+      return `/assets/images/ui/green-${iconName}.svg`;
+    } else if (isSunday && !isWarmUpMode) {
+      // Sunday in main game uses red icons
+      return `/assets/images/ui/red-${iconName}.svg`;
+    } else {
+      // Regular main game uses default icons
+      return `/assets/images/ui/${iconName}.svg`;
+    }
+  };
 
   const handleStatsClick = () => {
     console.log('Stats button clicked');
@@ -67,7 +94,7 @@ const HeaderToolbar = () => {
           data-testid="stats-button"
         >
           <img 
-            src={`/assets/images/ui/${isWarmUpMode ? 'green-statsbullet' : 'stats'}.svg`} 
+            src={isWarmUpMode ? '/assets/images/ui/green-statsbullet.svg' : getIconPath('stats')} 
             alt="Stats" 
             className="button-img" 
           />
@@ -79,7 +106,7 @@ const HeaderToolbar = () => {
           data-testid="warmup-button"
         >
           <img 
-            src={`/assets/images/ui/${isWarmUpMode ? 'green-goback' : 'warmup'}.svg`} 
+            src={isWarmUpMode ? '/assets/images/ui/green-goback.svg' : getIconPath('warmup')} 
             alt={isWarmUpMode ? "Back to Main Game" : "Warm Up"} 
             className="button-img" 
           />
@@ -91,7 +118,7 @@ const HeaderToolbar = () => {
           data-testid="help-button"
         >
           <img 
-            src={`/assets/images/ui/${isWarmUpMode ? 'green-question' : 'question'}.svg`} 
+            src={isWarmUpMode ? '/assets/images/ui/green-question.svg' : getIconPath('question')} 
             alt="Help" 
             className="button-img" 
           />
@@ -103,7 +130,7 @@ const HeaderToolbar = () => {
           data-testid="subscribe-button"
         >
           <img 
-            src={`/assets/images/ui/${isWarmUpMode ? 'green-subscribe' : 'subscribe'}.svg`} 
+            src={isWarmUpMode ? '/assets/images/ui/green-subscribe.svg' : getIconPath('subscribe')} 
             alt="Subscribe" 
             className="button-img" 
           />
@@ -115,7 +142,7 @@ const HeaderToolbar = () => {
           data-testid="refresh-button"
         >
           <img 
-            src={`/assets/images/ui/${isWarmUpMode ? 'green-refresh' : 'refresh'}.svg`} 
+            src={isWarmUpMode ? '/assets/images/ui/green-refresh.svg' : getIconPath('refresh')} 
             alt="Refresh" 
             className="button-img" 
           />

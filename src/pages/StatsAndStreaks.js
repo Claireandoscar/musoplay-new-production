@@ -3,17 +3,92 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../services/AuthContext';
 import { ScoreService } from '../services/scoreService';
 import ScoreHistory from '../components/ScoreHistory';
+import { Facebook, Instagram, Linkedin, MessageCircle } from 'lucide-react';
+
+// Utility function to determine heart image based on date
+const getHeartImageForDate = (date, isActive) => {
+  const isSunday = date.getDay() === 0;
+  if (isSunday) {
+    return isActive ? '/assets/images/ui/heart.svg' : '/assets/images/ui/heart-empty.svg';
+  } else {
+    return isActive ? '/assets/images/ui/purpleheart.svg' : '/assets/images/ui/purpleheart-empty.svg';
+  }
+};
 
 const StatsAndStreaks = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [isSunday, setIsSunday] = useState(false);
   const [stats, setStats] = useState({
     currentStreak: 0,
     bestStreak: 0,
     todayScore: 0,
-    barPerformance: [0, 0, 0, 0]
+    barPerformance: [0, 0, 0, 0],
+    lastPlayedDate: new Date()
   });
+
+  useEffect(() => {
+    const checkDay = () => {
+      setIsSunday(new Date().getDay() === 0);
+    };
+    checkDay();
+    const interval = setInterval(checkDay, 3600000); // Check every hour
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleShare = (platform) => {
+    const date = new Date().toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    });
+    const shareText = `MUSOPLAY - ${date}\nScore: ${stats.todayScore}/16`;
+    const shareUrl = 'https://musoplay.com';
+
+    switch (platform) {
+      case 'facebook':
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}`);
+        break;
+      case 'instagram':
+        alert('Screenshot and share on Instagram!');
+        break;
+      case 'whatsapp':
+        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + '\n' + shareUrl)}`);
+        break;
+      case 'linkedin':
+        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}&summary=${encodeURIComponent(shareText)}`);
+        break;
+      default:
+        break;
+    }
+  };
+
+  const handleNativeShare = async () => {
+    const date = new Date().toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    });
+    const shareText = `MUSOPLAY - ${date}\nScore: ${stats.todayScore}/16`;
+    const shareUrl = 'https://musoplay.com';
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'MUSOPLAY Score',
+          text: shareText,
+          url: shareUrl
+        });
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.error('Error sharing:', error);
+        }
+      }
+    } else {
+      alert('Use the social buttons above to share your score!');
+    }
+  };
 
   const loadStats = async () => {
     if (!user) {
@@ -23,7 +98,10 @@ const StatsAndStreaks = () => {
     try {
       setLoading(true);
       const userStats = await ScoreService.getUserStats(user.id);
-      setStats(userStats);
+      setStats({
+        ...userStats,
+        lastPlayedDate: new Date(userStats.lastPlayedDate || new Date())
+      });
     } catch (error) {
       console.error('Error loading stats:', error);
     } finally {
@@ -35,7 +113,6 @@ const StatsAndStreaks = () => {
     loadStats();
   }, [user, navigate]);
 
-  // Add effect for focus/visibility changes
   useEffect(() => {
     const handleFocus = () => {
       console.log('Window focused - refreshing stats');
@@ -124,27 +201,95 @@ const StatsAndStreaks = () => {
             <div className="card bg-[#FFFFF5] shadow-xl border-2 border-[#1174B9]/30 rounded-lg h-full">
               <div className="card-body p-6">
                 <h2 className="text-2xl font-['Patrick_Hand_SC'] mb-4">TODAY'S PERFORMANCE</h2>
-                
-                <div className="mb-6">
+
+                <div className="mb-8">
                   <p className="text-sm font-['Patrick_Hand_SC'] text-[#1174B9]">SCORE</p>
                   <p className="text-4xl font-['Patrick_Hand_SC']">{stats.todayScore}/16</p>
                 </div>
 
-                <div>
-                  <p className="text-sm font-['Patrick_Hand_SC'] text-[#FF2376] mb-4">BAR PERFORMANCE</p>
-                  <div className="grid grid-rows-4 gap-4">
-                    {stats.barPerformance.map((hearts, index) => (
-                      <div key={index} className="flex">
-                        {[...Array(4)].map((_, i) => (
-                          <img 
-                            key={i}
-                            src={`/assets/images/ui/${i < hearts ? 'heart.svg' : 'heart-empty.svg'}`}
-                            alt={i < hearts ? "Full Heart" : "Empty Heart"}
-                            className="w-8 h-8 mr-2"
+                {/* Hearts and Social Buttons Container */}
+                <div className="flex">
+                  {/* Hearts Section */}
+                  <div className="flex-1">
+                    <p className="text-sm font-['Patrick_Hand_SC'] text-[#FF2376] mb-4">BAR PERFORMANCE</p>
+                    <div className="grid grid-rows-4 gap-4">
+                      {stats.barPerformance.map((hearts, index) => (
+                        <div key={index} className="flex">
+                          {[...Array(4)].map((_, i) => (
+                            <img 
+                              key={i}
+                              src={getHeartImageForDate(stats.lastPlayedDate, i < hearts)}
+                              alt={i < hearts ? "Full Heart" : "Empty Heart"}
+                              className="w-8 h-8 mr-2"
+                            />
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Social Buttons Section - Centered */}
+                  <div className="flex-1 flex justify-center">
+                    <div className="w-32 flex flex-col justify-between">
+                      {/* 2x2 Social Grid */}
+                      <div className="grid grid-cols-2 gap-4 mt-8">
+                        <button
+                          onClick={() => handleShare('facebook')}
+                          className="w-12 h-12 rounded-lg border-2 flex items-center justify-center transition-colors hover:bg-gray-50"
+                          style={{ borderColor: isSunday ? '#FF2376' : '#AB08FF' }}
+                        >
+                          <Facebook 
+                            size={24} 
+                            style={{ stroke: isSunday ? '#FF2376' : '#AB08FF' }} 
                           />
-                        ))}
+                        </button>
+
+                        <button
+                          onClick={() => handleShare('instagram')}
+                          className="w-12 h-12 rounded-lg border-2 flex items-center justify-center transition-colors hover:bg-gray-50"
+                          style={{ borderColor: isSunday ? '#FF2376' : '#AB08FF' }}
+                        >
+                          <Instagram 
+                            size={24} 
+                            style={{ stroke: isSunday ? '#FF2376' : '#AB08FF' }} 
+                          />
+                        </button>
+
+                        <button
+                          onClick={() => handleShare('whatsapp')}
+                          className="w-12 h-12 rounded-lg border-2 flex items-center justify-center transition-colors hover:bg-gray-50"
+                          style={{ borderColor: isSunday ? '#FF2376' : '#AB08FF' }}
+                        >
+                          <MessageCircle 
+                            size={24} 
+                            style={{ stroke: isSunday ? '#FF2376' : '#AB08FF' }} 
+                          />
+                        </button>
+
+                        <button
+                          onClick={() => handleShare('linkedin')}
+                          className="w-12 h-12 rounded-lg border-2 flex items-center justify-center transition-colors hover:bg-gray-50"
+                          style={{ borderColor: isSunday ? '#FF2376' : '#AB08FF' }}
+                        >
+                          <Linkedin 
+                            size={24} 
+                            style={{ stroke: isSunday ? '#FF2376' : '#AB08FF' }} 
+                          />
+                        </button>
                       </div>
-                    ))}
+
+                      {/* Please Share Button */}
+                      <button
+                        onClick={handleNativeShare}
+                        className="w-full text-sm font-['Patrick_Hand_SC'] border-2 rounded-lg px-2 py-2 transition-colors hover:bg-gray-50"
+                        style={{ 
+                          borderColor: isSunday ? '#FF2376' : '#AB08FF',
+                          color: isSunday ? '#FF2376' : '#AB08FF'
+                        }}
+                      >
+                        PLEASE SHARE!
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

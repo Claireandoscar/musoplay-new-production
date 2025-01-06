@@ -1,17 +1,17 @@
-.main-progress-bar-container {  /* Changed from progress-bar-container */
+.main-progress-bar-container {
   position: absolute;
   bottom: 64px;
   left: 15.38%;
   width: 69.23%;
   height: 10px;
   background-color: #fffdee;
-  border: 4px solid #AB08FF;
+  border: 4px solid; /* Remove hardcoded color - now controlled by component */
   border-radius: 5px;
   overflow: hidden;
 }
 
-.main-progress-bar-fill {  /* Changed from progress-bar-fill */
+.main-progress-bar-fill {
   height: 100%;
-  background-color: #AB08FF;
   transition: width 0.3s ease-in-out;
+  /* Remove backgroundColor - now controlled by component */
 }

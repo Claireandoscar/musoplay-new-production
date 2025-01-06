@@ -203,7 +203,7 @@
 }
 
 .main-game-share-button:hover {
-  background-color: #AB08FF;
+  background-color: var(--theme-color, #AB08FF);
 }
 
 .main-game-share-button:hover svg {
@@ -226,8 +226,8 @@
 }
 
 .main-game-share-text-button:hover {
-  background: #AB08FF;
-  color: #FFFDEE;
+  background-color: var(--theme-color, #AB08FF);
+  color: #FFFDEE !important;
 }
 
 @keyframes gentlePulse {
