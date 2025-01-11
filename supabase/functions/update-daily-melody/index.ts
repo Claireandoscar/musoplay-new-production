@@ -106,9 +106,8 @@ Deno.serve(async (req) => {
 
     // Construct folder path based on game type
     const folderPath = gameType === 'warmup'
-      ? `${year}/december/warmup_easy_${year}_${month}_${day}`
-      : `${year}/december/melody_${dayOfWeek === 0 ? 'difficult' : 'medium'}_${year}_${month}_${day}`;
-
+    ? `${year}/january/warmup_easy_${year}_${month}_${day}`
+    : `${year}/january/${year}_${month}_${day}_${dayOfWeek === 0 ? 'difficult' : 'medium'}`;
     // List files in folder
     const { data: files, error: listError } = await supabaseAdmin
       .storage
@@ -207,7 +206,7 @@ Deno.serve(async (req) => {
     }
 
     const tuneFile = files.find((file: { name: string }) => 
-      file.name.match(/^test[0-9]*tune\.mp3$/));
+      file.name.match(/^[a-z]+\d{2}tune\.mp3$/));
     
     if (!tuneFile) {
       await logAdminError(supabaseAdmin, 'Missing tune file', {

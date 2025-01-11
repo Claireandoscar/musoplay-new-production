@@ -23,15 +23,11 @@ export class AudioFetchService {
     const dayOfWeek = now.getDay();
     const difficulty = dayOfWeek === 0 ? 'difficult' : 'medium';
     
-    const monthNames = [
-      'january', 'february', 'march', 'april', 'may', 'june',
-      'july', 'august', 'september', 'october', 'november', 'december'
-    ];
+    // We don't need monthNames array anymore since we're using the new format
     
     return {
       year: year.toString(),
-      month: monthNames[month],
-      paddedMonth,
+      month: paddedMonth,
       day,
       difficulty,
       formatted: `${year}_${paddedMonth}_${day}`
@@ -71,8 +67,9 @@ export class AudioFetchService {
     try {
       await this.initialize();
       
-      const { year, month, formatted, difficulty } = this.getDateParts();
-      const melodyPath = `${year}/${month}/melody_${difficulty}_${formatted}`;
+      const { year, month, day, formatted, difficulty } = this.getDateParts();
+      // New path format matching your Supabase structure: 2025_01_20_medium
+      const melodyPath = `${year}/january/${year}_${month}_${day}_${difficulty}`;
       
       console.log('Fetching from path:', melodyPath);
       
@@ -99,8 +96,8 @@ export class AudioFetchService {
           return aNum - bNum;
         });
 
-      // Find tune file
-      const tuneFile = melodyFiles.find(f => f.name.includes('tune.mp3'));
+      // Find tune file with new naming pattern (e.g., jan01tune.mp3)
+      const tuneFile = melodyFiles.find(f => f.name.match(/^[a-z]+\d{2}tune\.mp3$/));
 
       if (barFiles.length !== 4 || !tuneFile) {
         console.error('Missing required audio files');
