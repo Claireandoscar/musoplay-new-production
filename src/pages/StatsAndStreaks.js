@@ -11,7 +11,7 @@ const getHeartImageForDate = (date, isActive) => {
   if (isSunday) {
     return isActive ? '/assets/images/ui/heart.svg' : '/assets/images/ui/heart-empty.svg';
   } else {
-    return isActive ? '/assets/images/ui/purpleheart.svg' : '/assets/images/ui/purpleheart-empty.svg';
+    return isActive ? '/assets/images/ui/orangeheart.svg' : '/assets/images/ui/orangeheart-empty.svg';
   }
 };
 
@@ -19,7 +19,6 @@ const StatsAndStreaks = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [isSunday, setIsSunday] = useState(false);
   const [stats, setStats] = useState({
     currentStreak: 0,
     bestStreak: 0,
@@ -27,15 +26,6 @@ const StatsAndStreaks = () => {
     barPerformance: [0, 0, 0, 0],
     lastPlayedDate: new Date()
   });
-
-  useEffect(() => {
-    const checkDay = () => {
-      setIsSunday(new Date().getDay() === 0);
-    };
-    checkDay();
-    const interval = setInterval(checkDay, 3600000); // Check every hour
-    return () => clearInterval(interval);
-  }, []);
 
   const handleShare = (platform) => {
     const date = new Date().toLocaleDateString('en-US', {
@@ -115,14 +105,12 @@ const StatsAndStreaks = () => {
 
   useEffect(() => {
     const handleFocus = () => {
-      console.log('Window focused - refreshing stats');
       loadStats();
     };
 
     window.addEventListener('focus', handleFocus);
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) {
-        console.log('Page visible - refreshing stats');
         loadStats();
       }
     });
@@ -156,7 +144,7 @@ const StatsAndStreaks = () => {
         {/* Back Button */}
         <button 
           onClick={() => navigate('/')}
-          className="font-['Patrick_Hand_SC'] text-[#00C22D] border-[#00C22D] border-3 rounded-full px-6 py-2 mb-6 hover:bg-[#00C22D] hover:text-white transition-colors"
+          className="font-['Patrick_Hand_SC'] text-[#1174B9] border-[#1174B9] border-3 rounded-full px-6 py-2 mb-6 hover:bg-[#1174B9] hover:text-white transition-colors"
         >
           BACK TO GAME
         </button>
@@ -167,13 +155,13 @@ const StatsAndStreaks = () => {
             <div className="card-body p-4">
               <div className="flex justify-between items-center">
                 <div>
-                  <p className="text-sm font-['Patrick_Hand_SC'] text-[#00C22D] mb-1">CURRENT STREAK</p>
+                  <p className="text-sm font-['Patrick_Hand_SC'] text-[#AB08FF] mb-1">CURRENT STREAK</p>
                   <div className="flex items-baseline">
-                    <span className="text-4xl font-['Patrick_Hand_SC'] text-[#00C22D]">{stats.currentStreak}</span>
-                    <span className="ml-2 text-xl font-['Patrick_Hand_SC'] text-[#00C22D]">DAYS</span>
+                    <span className="text-4xl font-['Patrick_Hand_SC'] text-[#AB08FF]">{stats.currentStreak}</span>
+                    <span className="ml-2 text-xl font-['Patrick_Hand_SC'] text-[#AB08FF]">DAYS</span>
                   </div>
                 </div>
-                <img src="/assets/images/ui/streak.svg" alt="Streak" className="w-12 h-12" />
+                <img src="/assets/images/ui/purple-streak.svg" alt="Streak" className="w-12 h-12" />
               </div>
             </div>
           </div>
@@ -182,13 +170,13 @@ const StatsAndStreaks = () => {
             <div className="card-body p-4">
               <div className="flex justify-between items-center">
                 <div>
-                  <p className="text-sm font-['Patrick_Hand_SC'] text-[#FF8A20] mb-1">BEST STREAK</p>
+                  <p className="text-sm font-['Patrick_Hand_SC'] text-[#AB08FF] mb-1">BEST STREAK</p>
                   <div className="flex items-baseline">
-                    <span className="text-4xl font-['Patrick_Hand_SC'] text-[#FF8A20]">{stats.bestStreak}</span>
-                    <span className="ml-2 text-xl font-['Patrick_Hand_SC'] text-[#FF8A20]">DAYS</span>
+                    <span className="text-4xl font-['Patrick_Hand_SC'] text-[#AB08FF]">{stats.bestStreak}</span>
+                    <span className="ml-2 text-xl font-['Patrick_Hand_SC'] text-[#AB08FF]">DAYS</span>
                   </div>
                 </div>
-                <img src="/assets/images/ui/trophy.svg" alt="Trophy" className="w-12 h-12" />
+                <img src="/assets/images/ui/purple-trophy.svg" alt="Trophy" className="w-12 h-12" />
               </div>
             </div>
           </div>
@@ -200,18 +188,18 @@ const StatsAndStreaks = () => {
           <div className="lg:w-1/2 mb-6 lg:mb-0">
             <div className="card bg-[#FFFFF5] shadow-xl border-2 border-[#1174B9]/30 rounded-lg h-full">
               <div className="card-body p-6">
-                <h2 className="text-2xl font-['Patrick_Hand_SC'] mb-4">TODAY'S PERFORMANCE</h2>
+                <h2 className="text-2xl font-['Patrick_Hand_SC'] text-[#1174B9] mb-4">TODAY'S PERFORMANCE</h2>
 
                 <div className="mb-8">
                   <p className="text-sm font-['Patrick_Hand_SC'] text-[#1174B9]">SCORE</p>
-                  <p className="text-4xl font-['Patrick_Hand_SC']">{stats.todayScore}/16</p>
+                  <p className="text-4xl font-['Patrick_Hand_SC'] text-[#1174B9]">{stats.todayScore}/16</p>
                 </div>
 
                 {/* Hearts and Social Buttons Container */}
                 <div className="flex">
                   {/* Hearts Section */}
                   <div className="flex-1">
-                    <p className="text-sm font-['Patrick_Hand_SC'] text-[#FF2376] mb-4">BAR PERFORMANCE</p>
+                    <p className="text-sm font-['Patrick_Hand_SC'] text-[#1174B9] mb-4">BAR PERFORMANCE</p>
                     <div className="grid grid-rows-4 gap-4">
                       {stats.barPerformance.map((hearts, index) => (
                         <div key={index} className="flex">
@@ -228,7 +216,7 @@ const StatsAndStreaks = () => {
                     </div>
                   </div>
 
-                  {/* Social Buttons Section - Centered */}
+                  {/* Social Buttons Section */}
                   <div className="flex-1 flex justify-center">
                     <div className="w-32 flex flex-col justify-between">
                       {/* 2x2 Social Grid */}
@@ -236,45 +224,33 @@ const StatsAndStreaks = () => {
                         <button
                           onClick={() => handleShare('facebook')}
                           className="w-12 h-12 rounded-lg border-2 flex items-center justify-center transition-colors hover:bg-gray-50"
-                          style={{ borderColor: isSunday ? '#FF2376' : '#AB08FF' }}
+                          style={{ borderColor: '#1174B9' }}
                         >
-                          <Facebook 
-                            size={24} 
-                            style={{ stroke: isSunday ? '#FF2376' : '#AB08FF' }} 
-                          />
+                          <Facebook size={24} style={{ stroke: '#1174B9' }} />
                         </button>
 
                         <button
                           onClick={() => handleShare('instagram')}
                           className="w-12 h-12 rounded-lg border-2 flex items-center justify-center transition-colors hover:bg-gray-50"
-                          style={{ borderColor: isSunday ? '#FF2376' : '#AB08FF' }}
+                          style={{ borderColor: '#1174B9' }}
                         >
-                          <Instagram 
-                            size={24} 
-                            style={{ stroke: isSunday ? '#FF2376' : '#AB08FF' }} 
-                          />
+                          <Instagram size={24} style={{ stroke: '#1174B9' }} />
                         </button>
 
                         <button
                           onClick={() => handleShare('whatsapp')}
                           className="w-12 h-12 rounded-lg border-2 flex items-center justify-center transition-colors hover:bg-gray-50"
-                          style={{ borderColor: isSunday ? '#FF2376' : '#AB08FF' }}
+                          style={{ borderColor: '#1174B9' }}
                         >
-                          <MessageCircle 
-                            size={24} 
-                            style={{ stroke: isSunday ? '#FF2376' : '#AB08FF' }} 
-                          />
+                          <MessageCircle size={24} style={{ stroke: '#1174B9' }} />
                         </button>
 
                         <button
                           onClick={() => handleShare('linkedin')}
                           className="w-12 h-12 rounded-lg border-2 flex items-center justify-center transition-colors hover:bg-gray-50"
-                          style={{ borderColor: isSunday ? '#FF2376' : '#AB08FF' }}
+                          style={{ borderColor: '#1174B9' }}
                         >
-                          <Linkedin 
-                            size={24} 
-                            style={{ stroke: isSunday ? '#FF2376' : '#AB08FF' }} 
-                          />
+                          <Linkedin size={24} style={{ stroke: '#1174B9' }} />
                         </button>
                       </div>
 
@@ -283,8 +259,8 @@ const StatsAndStreaks = () => {
                         onClick={handleNativeShare}
                         className="w-full text-sm font-['Patrick_Hand_SC'] border-2 rounded-lg px-2 py-2 transition-colors hover:bg-gray-50"
                         style={{ 
-                          borderColor: isSunday ? '#FF2376' : '#AB08FF',
-                          color: isSunday ? '#FF2376' : '#AB08FF'
+                          borderColor: '#1174B9',
+                          color: '#1174B9'
                         }}
                       >
                         PLEASE SHARE!

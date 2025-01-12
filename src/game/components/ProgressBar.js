@@ -15,7 +15,8 @@ function ProgressBar({ completedBars }) {
     return () => clearInterval(interval);
   }, []);
 
-  const themeColor = isSunday ? '#FF2376' : '#AB08FF';
+  // Change this line to always use blue
+  const themeColor = '#1174B9';
 
   return (
     <div className="main-progress-bar-container" style={{ borderColor: themeColor }}>

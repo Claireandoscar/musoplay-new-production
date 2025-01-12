@@ -13,7 +13,6 @@ const EndGameAnimation = ({ score, barHearts }) => {
   useEffect(() => {
     setIsSunday(new Date().getDay() === 0);
   }, []);
-
   
   const getScoringPhrase = (score) => {
     if (score === 16) return "Legendary";
@@ -55,7 +54,7 @@ const EndGameAnimation = ({ score, barHearts }) => {
     });
     
     const shareText = `MUSOPLAY - ${date}\n${getScoringPhrase(score)}\nScore: ${score}/16`;
-    const shareUrl = 'https://musoplay.com'; // Replace with actual URL
+    const shareUrl = 'https://musoplay.com';
 
     switch (platform) {
       case 'facebook':
@@ -83,7 +82,7 @@ const EndGameAnimation = ({ score, barHearts }) => {
     });
     
     const shareText = `MUSOPLAY - ${date}\n${getScoringPhrase(score)}\nScore: ${score}/16`;
-    const shareUrl = 'https://musoplay.com'; // Replace with actual URL
+    const shareUrl = 'https://musoplay.com';
 
     if (navigator.share) {
       try {
@@ -124,6 +123,7 @@ const EndGameAnimation = ({ score, barHearts }) => {
             </div>
           </>
         )}
+
         <div className="hearts-display">
           {barHearts.map((hearts, index) => (
             <div key={index} className={`bar-hearts ${animationStage > index ? 'visible' : ''}`}>
@@ -131,8 +131,8 @@ const EndGameAnimation = ({ score, barHearts }) => {
                 <img 
                   key={i}
                   src={`/assets/images/ui/${i < hearts ? 
-                    (isSunday ? 'heart.svg' : 'purpleheart.svg') : 
-                    (isSunday ? 'heart-empty.svg' : 'purpleheart-empty.svg')}`}
+                    (isSunday ? 'heart.svg' : 'orangeheart.svg') : 
+                    (isSunday ? 'heart-empty.svg' : 'orangeheart-empty.svg')}`}
                   alt={i < hearts ? "Full Heart" : "Empty Heart"}
                   className="heart-image"
                 />
@@ -147,38 +147,38 @@ const EndGameAnimation = ({ score, barHearts }) => {
               <button 
                 onClick={() => handleShare('facebook')} 
                 className="main-game-share-button"
-                style={{ borderColor: isSunday ? '#FF2376' : '#AB08FF' }}
+                style={{ borderColor: '#1174B9' }}
               >
-                <Facebook style={{ stroke: isSunday ? '#FF2376' : '#AB08FF' }} />
+                <Facebook style={{ stroke: '#1174B9' }} />
               </button>
               <button 
                 onClick={() => handleShare('instagram')} 
                 className="main-game-share-button"
-                style={{ borderColor: isSunday ? '#FF2376' : '#AB08FF' }}
+                style={{ borderColor: '#1174B9' }}
               >
-                <Instagram style={{ stroke: isSunday ? '#FF2376' : '#AB08FF' }} />
+                <Instagram style={{ stroke: '#1174B9' }} />
               </button>
               <button 
                 onClick={() => handleShare('whatsapp')} 
                 className="main-game-share-button"
-                style={{ borderColor: isSunday ? '#FF2376' : '#AB08FF' }}
+                style={{ borderColor: '#1174B9' }}
               >
-                <MessageCircle style={{ stroke: isSunday ? '#FF2376' : '#AB08FF' }} />
+                <MessageCircle style={{ stroke: '#1174B9' }} />
               </button>
               <button 
                 onClick={() => handleShare('linkedin')} 
                 className="main-game-share-button"
-                style={{ borderColor: isSunday ? '#FF2376' : '#AB08FF' }}
+                style={{ borderColor: '#1174B9' }}
               >
-                <Linkedin style={{ stroke: isSunday ? '#FF2376' : '#AB08FF' }} />
+                <Linkedin style={{ stroke: '#1174B9' }} />
               </button>
             </div>
             <button 
               onClick={handleNativeShare}
               className="main-game-share-text-button"
               style={{ 
-                borderColor: isSunday ? '#FF2376' : '#AB08FF',
-                color: isSunday ? '#FF2376' : '#AB08FF'
+                borderColor: '#1174B9',
+                color: '#1174B9'
               }}
             >
               PLEASE SHARE!

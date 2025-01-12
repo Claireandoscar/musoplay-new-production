@@ -13,7 +13,7 @@ const ScoreHistory = ({ userId }) => {
     if (isSunday) {
       return isActive ? 'heart.svg' : 'heart-empty.svg';
     }
-    return isActive ? 'purpleheart.svg' : 'purpleheart-empty.svg';
+    return isActive ? 'orangeheart.svg' : 'orangeheart-empty.svg';
   };
 
   useEffect(() => {

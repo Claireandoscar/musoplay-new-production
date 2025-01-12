@@ -19,7 +19,7 @@ function LifeIndicator({ hearts, isBarFailed }) {
     if (isSunday) {
       return isActive ? 'heart.svg' : 'heart-empty.svg';
     } else {
-      return isActive ? 'purpleheart.svg' : 'purpleheart-empty.svg';
+      return isActive ? 'orangeheart.svg' : 'orangeheart-empty.svg';
     }
   };
 

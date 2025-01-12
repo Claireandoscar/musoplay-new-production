@@ -11,6 +11,7 @@ import { supabase } from '../services/supabase';
 import { useAuth } from '../services/AuthContext';
 import { ScoreService } from '../services/scoreService';
 import { audioFetchService } from '../services/audioFetchService';
+import InstructionsPopup from './components/InstructionsPopup';
 
 
 
@@ -744,7 +745,7 @@ const handleNotePlay = useCallback(async (noteNumber) => {
 return (
   <div className="game-wrapper main-game-instance"> 
     <div className={`game-container ${gameMode}`}>
-    <HeaderToolbar /> 
+      <HeaderToolbar /> 
       <GameBoard 
         barHearts={gameState.barHearts}
         currentBarIndex={currentBarIndex}
@@ -768,67 +769,35 @@ return (
         isGameEnded={isGameEnded}
       />
       <VirtualInstrument 
-  notes={notes}
-  onNotePlay={handleNotePlay}
-  isGameEnded={isGameEnded}
-  isBarFailing={gameState.isBarFailing}
-  showFirstNoteHint={showFirstNoteHint}
-  correctSequence={correctSequence}
-  currentBarIndex={currentBarIndex}
-  hintLevel={gameState.hintLevel}
-  currentNoteIndex={gameState.currentNoteIndex}  // Add this line
-/>
-      <ProgressBar completedBars={gameState.completedBars.filter(Boolean).length} />
+        notes={notes}
+        onNotePlay={handleNotePlay}
+        isGameEnded={isGameEnded}
+        isBarFailing={gameState.isBarFailing}
+        showFirstNoteHint={showFirstNoteHint}
+        correctSequence={correctSequence}
+        currentBarIndex={currentBarIndex}
+        hintLevel={gameState.hintLevel}
+        currentNoteIndex={gameState.currentNoteIndex}
+      />
+      <ProgressBar 
+        completedBars={gameState.completedBars.filter(Boolean).length} 
+      />
       {showEndAnimation && (
         <EndGameAnimation 
           score={score}
           barHearts={gameState.barHearts}
         />
       )}
-{(showInstructions || isPreloading) && gameMode === 'initial' && currentBarIndex === 0 && (
-  <div 
-    className="instructions-popup"
-    style={{ borderColor: isSunday ? '#FF2376' : '#AB08FF' }}
-  >
-    <div className="instructions-content">
-      <h2>HOW TO PLAY</h2>
-      <div className="instruction-flow">
-        <p>
-          <span style={{ fontSize: '0.8em', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
-            <img 
-              src={`/assets/images/ui/${isSunday ? 'heart' : 'purpleheart'}.svg`}
-              alt="heart" 
-              style={{ width: '20px', height: '20px', margin: '0 5px' }} 
-            />
-            TURN OFF SILENT MODE
-            <img 
-              src={`/assets/images/ui/${isSunday ? 'heart' : 'purpleheart'}.svg`}
-              alt="heart" 
-              style={{ width: '20px', height: '20px', margin: '0 5px' }} 
-            />
-          </span>
-          1. PRESS LISTEN & PRACTICE<br/>
-          2. PLAY WHAT YOU HEAR USING THE COLOURFUL BUTTONS<br/>
-          3. PRACTICE AS MANY TIMES AS YOU NEED<br/>
-          4. PRESS PERFORM TO PLAY THE MELODY FOR REAL<br/>
-          5. HIT THE RIGHT NOTES TO HANG ON TO YOUR HEARTS!
-        </p>
-      </div>
-      <p className="challenge">CAN YOU HIT THE RIGHT NOTES?</p>
-      <button
-        className="instructions-next"
-        onClick={handleStartGame}
-        disabled={isPreloading || !isAudioLoaded}
-      >
-        <img 
-          src={`/assets/images/ui/${isSunday ? 'red-play' : 'play'}.svg`} 
-          alt="Next" 
-        />
-     </button>
-        </div>
-      </div>
-    )}
     </div>
+    {/* Move Instructions Popup here, outside game-container */}
+    {(showInstructions || isPreloading) && gameMode === 'initial' && currentBarIndex === 0 && (
+      <InstructionsPopup
+        isPreloading={isPreloading}
+        isAudioLoaded={isAudioLoaded}
+        onStartGame={handleStartGame}
+        gameMode="main"
+      />
+    )}
   </div>
 );
 }
