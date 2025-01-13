@@ -612,7 +612,6 @@ const moveToNextBar = useCallback((isSuccess = true) => {
   setShowFirstNoteHint,
   fullTuneMelodyAudio,
   gameState.barHearts,
-  ScoreService,
   user?.id
 ]);
 // eslint-disable-next-line no-unused-vars
