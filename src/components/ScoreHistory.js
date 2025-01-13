@@ -16,6 +16,8 @@ const ScoreHistory = ({ userId }) => {
     return isActive ? 'orangeheart.svg' : 'orangeheart-empty.svg';
   };
 
+  // Helper function to check if a date is today
+
   useEffect(() => {
     const fetchGameHistory = async () => {
       try {
@@ -97,7 +99,7 @@ const ScoreHistory = ({ userId }) => {
           >
             ←
           </button>
-          <h3 className="font-['Patrick_Hand_SC'] text-xl">
+          <h3 className="font-['Patrick_Hand_SC'] text-xl text-[#1174B9]">
             {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' }).toUpperCase()}
           </h3>
           <button 

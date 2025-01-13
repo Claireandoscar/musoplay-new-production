@@ -8,7 +8,7 @@ const InstructionsPopup = ({
 }) => {
   const getHeartImage = () => {
     if (gameMode === 'warmup') return 'greenheart.svg';
-    return new Date().getDay() === 0 ? 'heart.svg' : 'purpleheart.svg';
+    return new Date().getDay() === 0 ? 'heart.svg' : 'orangeheart.svg';
   };
 
   const getDifficultyText = () => {
