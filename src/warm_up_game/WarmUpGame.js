@@ -222,6 +222,32 @@ useEffect(() => {
 
 
 useEffect(() => {
+  // Move loadAudio function inside
+  const loadAudio = async (barIndex) => {
+    console.log('LoadAudio called with barIndex:', barIndex);
+    console.log('Current audioFiles:', audioFiles);
+    if (audioFiles.length === 0 || barIndex >= audioFiles.length) {
+      console.log('No audio files available or invalid bar index');
+      setIsAudioLoaded(false);
+      return;
+    }
+
+    try {
+      const audioPath = audioFiles[barIndex];
+      console.log('Loading audio from path:', audioPath);
+      await audioEngine.loadSound(audioPath, `melody${barIndex}`);
+      const audio = new Audio(audioPath);
+      setMelodyAudio(audio);
+      setIsAudioLoaded(true);
+      console.log('Audio successfully loaded, isAudioLoaded set to true');
+      return audio;
+    } catch (error) {
+      console.error('Failed to load audio:', error);
+      setIsAudioLoaded(false);
+      return null;
+    }
+  };
+
   const fetchAndInitAudio = async () => {
     try {
       console.log('Starting warm-up audio setup...');
@@ -286,15 +312,16 @@ useEffect(() => {
   return () => {
     console.log('Cleaning up warm-up audio setup');
   };
-}, []); // Remove loadAudio dependency
-  // Keep this useEffect for loading melodies when bar changes
-  useEffect(() => {
-    if (correctSequence.length > 0) {
-      loadAudio(currentBarIndex);
-    }
-  }, [currentBarIndex, correctSequence, loadAudio]);
+}, [audioFiles, audioEngine, dispatch, setMelodyAudio]); // Add dependencies used inside loadAudio
 
-  // Updated practice mode handler
+// Keep this useEffect for loading melodies when bar changes
+useEffect(() => {
+  if (correctSequence.length > 0) {
+    loadAudio(currentBarIndex);
+  }
+}, [currentBarIndex, correctSequence, loadAudio]);
+
+// Updated practice mode handler
  
   const handleListenPractice = useCallback(async () => {
     if (!isAudioLoaded) return;
@@ -495,8 +522,7 @@ const moveToNextBar = useCallback((isSuccess = true) => {
           console.log('Insert result:', { insertData, insertError });
         } else {
           // Update existing stats
-          const lastPlayed = new Date(currentStats.last_played_at);
-          const today = new Date();
+      
   
           const { data: updateData, error: updateError } = await supabase
             .from('user_stats')
@@ -582,7 +608,9 @@ const moveToNextBar = useCallback((isSuccess = true) => {
   score,
   setShowFirstNoteHint,
   fullTuneMelodyAudio,
-  gameState.barHearts
+  gameState.barHearts,
+  supabase,  // Add this instead of user?.id
+  ScoreService, // Add this as well since you're using it
 ]);
 // eslint-disable-next-line no-unused-vars
 const handleGameReset = () => {

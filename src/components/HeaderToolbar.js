@@ -9,11 +9,6 @@ const HeaderToolbar = () => {
   const isWarmUpMode = location.pathname === '/warm-up';
   useAuth();
 
-  // Helper function to get the correct icon path - now always returns blue icons
-  const getIconPath = (iconName) => {
-    return `/assets/images/ui/blue-${iconName}.svg`;
-  };
-
   const handleStatsClick = () => {
     console.log('Stats button clicked');
     try {

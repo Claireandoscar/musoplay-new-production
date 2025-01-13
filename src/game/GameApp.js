@@ -224,9 +224,35 @@ useEffect(() => {
 
 // eslint-disable-next-line react-hooks/exhaustive-deps
 useEffect(() => {
+  // Move loadAudio function inside
+  const loadAudio = async (barIndex) => {
+    console.log('LoadAudio called with barIndex:', barIndex);
+    console.log('Current audioFiles:', audioFiles);
+    if (audioFiles.length === 0 || barIndex >= audioFiles.length) {
+      console.log('No audio files available or invalid bar index');
+      setIsAudioLoaded(false);
+      return;
+    }
+
+    try {
+      const audioPath = audioFiles[barIndex];
+      console.log('Loading audio from path:', audioPath);
+      await audioEngine.loadSound(audioPath, `melody${barIndex}`);
+      const audio = new Audio(audioPath);
+      setMelodyAudio(audio);
+      setIsAudioLoaded(true);
+      console.log('Audio successfully loaded, isAudioLoaded set to true');
+      return audio;
+    } catch (error) {
+      console.error('Failed to load audio:', error);
+      setIsAudioLoaded(false);
+      return null;
+    }
+  };
+
   const fetchAndInitAudio = async () => {
     try {
-      console.log('Starting audio setup...');
+      console.log('Starting warm-up audio setup...');
       setIsPreloading(true);
 
       // First, initialize the audio engine
@@ -248,25 +274,25 @@ useEffect(() => {
       await audioEngine.loadSound('/assets/audio/ui-sounds/bar-complete.mp3', 'complete');
       await audioEngine.loadSound('/assets/audio/ui-sounds/note-flip.mp3', 'flip');
 
-      // Then fetch melody files
-      console.log('Fetching melody files...');
+      // Then fetch warm-up melody files
+      console.log('Fetching warm-up melody files...');
       try {
-        const melodyData = await audioFetchService.fetchSupabaseAudio();
-        const localDateString = audioFetchService.getLocalDateString();
+        const melodyData = await audioFetchService.fetchWarmupAudio();
+        const localWeeklyString = audioFetchService.getLocalWeeklyString();
         
-        if (melodyData.date === localDateString) {
-          console.log('Setting up today\'s melody');
+        if (melodyData.date === localWeeklyString) {
+          console.log('Setting up this week\'s warm-up melody');
           setAudioFiles(melodyData.melodyParts);
           setFullTunePath(melodyData.fullTune);
           
           // Load the first bar
           await loadAudio(0);
         } else {
-          throw new Error('Melody not for today');
+          throw new Error('Warm-up melody not for this week');
         }
       } catch (error) {
-        console.log('Using fallback melody:', error);
-        const fallbackData = await audioFetchService.fetchFallbackAudio();
+        console.log('Using fallback warm-up melody:', error);
+        const fallbackData = await audioFetchService.fetchWarmupFallbackAudio();
         setAudioFiles(fallbackData.melodyParts);
         setFullTunePath(fallbackData.fullTune);
         await loadAudio(0);
@@ -274,9 +300,9 @@ useEffect(() => {
 
       setIsAudioLoaded(true);
       dispatch({ type: 'SET_GAME_PHASE', payload: 'ready' });
-      console.log('Audio setup complete');
+      console.log('Warm-up audio setup complete');
     } catch (error) {
-      console.error('Audio setup failed:', error);
+      console.error('Warm-up audio setup failed:', error);
       setIsAudioLoaded(false);
     } finally {
       setIsPreloading(false);
@@ -286,16 +312,18 @@ useEffect(() => {
   fetchAndInitAudio();
 
   return () => {
-    console.log('Cleaning up audio setup');
-    // Any cleanup needed
+    console.log('Cleaning up warm-up audio setup');
   };
-}, []); // Remove loadAudio dependency
-  // Keep this useEffect for loading melodies when bar changes
-  useEffect(() => {
-    if (correctSequence.length > 0) {
-      loadAudio(currentBarIndex);
-    }
-  }, [currentBarIndex, correctSequence, loadAudio]);
+}, [audioFiles, audioEngine, dispatch, setMelodyAudio]); // Add dependencies used inside loadAudio
+
+// Keep this useEffect for loading melodies when bar changes
+useEffect(() => {
+  if (correctSequence.length > 0) {
+    loadAudio(currentBarIndex);
+  }
+}, [currentBarIndex, correctSequence, loadAudio]);
+
+// Updated practice mode handler
 
   // Updated practice mode handler
  
@@ -509,8 +537,7 @@ const moveToNextBar = useCallback((isSuccess = true) => {
           console.log('Insert result:', { insertData, insertError });
         } else {
           // Update existing stats
-          const lastPlayed = new Date(currentStats.last_played_at);
-          const today = new Date();
+        
   
           const { data: updateData, error: updateError } = await supabase
             .from('user_stats')
@@ -596,7 +623,9 @@ const moveToNextBar = useCallback((isSuccess = true) => {
   score,
   setShowFirstNoteHint,
   fullTuneMelodyAudio,
-  gameState.barHearts
+  gameState.barHearts,
+  supabase,  // Add this instead of user?.id
+  ScoreService, // Add this as well since you're using it
 ]);
 // eslint-disable-next-line no-unused-vars
 const handleGameReset = () => {
