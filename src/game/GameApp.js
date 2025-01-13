@@ -119,8 +119,6 @@ function GameApp() {
   const { user } = useAuth();
   console.log('Current authenticated user:', user); 
   const [gameState, dispatch] = useReducer(gameReducer, initialGameState);
-  
-  const [isSunday, setIsSunday] = useState(false);
 
   // Audio-related states
   const [isPreloading, setIsPreloading] = useState(true);
@@ -314,7 +312,7 @@ useEffect(() => {
   return () => {
     console.log('Cleaning up warm-up audio setup');
   };
-}, [audioFiles, audioEngine, dispatch, setMelodyAudio]); // Add dependencies used inside loadAudio
+}, [audioFiles, dispatch, setMelodyAudio]); // Add dependencies used inside loadAudio
 
 // Keep this useEffect for loading melodies when bar changes
 useEffect(() => {
@@ -475,16 +473,6 @@ useEffect(() => {
     };
 }, [melodyAudio]);
 
-useEffect(() => {
-  const checkDay = () => {
-      setIsSunday(new Date().getDay() === 0);
-  };
-  
-  checkDay();
-  const interval = setInterval(checkDay, 3600000); // Check every hour
-  
-  return () => clearInterval(interval);
-}, []);
 
 const moveToNextBar = useCallback((isSuccess = true) => {
   // Reset hint state when moving to next bar
@@ -624,8 +612,8 @@ const moveToNextBar = useCallback((isSuccess = true) => {
   setShowFirstNoteHint,
   fullTuneMelodyAudio,
   gameState.barHearts,
-  supabase,  // Add this instead of user?.id
-  ScoreService, // Add this as well since you're using it
+  ScoreService,
+  user?.id
 ]);
 // eslint-disable-next-line no-unused-vars
 const handleGameReset = () => {

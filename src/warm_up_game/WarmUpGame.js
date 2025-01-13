@@ -312,7 +312,7 @@ useEffect(() => {
   return () => {
     console.log('Cleaning up warm-up audio setup');
   };
-}, [audioFiles, audioEngine, dispatch, setMelodyAudio]); // Add dependencies used inside loadAudio
+}, [audioFiles, dispatch, setMelodyAudio]); // Add dependencies used inside loadAudio
 
 // Keep this useEffect for loading melodies when bar changes
 useEffect(() => {
@@ -609,8 +609,8 @@ const moveToNextBar = useCallback((isSuccess = true) => {
   setShowFirstNoteHint,
   fullTuneMelodyAudio,
   gameState.barHearts,
-  supabase,  // Add this instead of user?.id
-  ScoreService, // Add this as well since you're using it
+  ScoreService,
+  user?.id 
 ]);
 // eslint-disable-next-line no-unused-vars
 const handleGameReset = () => {

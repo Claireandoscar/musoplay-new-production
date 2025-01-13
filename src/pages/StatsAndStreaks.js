@@ -98,7 +98,7 @@ const StatsAndStreaks = () => {
     } finally {
       setLoading(false);
     }
-}, [user, navigate, ScoreService]);
+}, [user, navigate]);
 
   useEffect(() => {
     loadStats();
