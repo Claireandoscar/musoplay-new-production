@@ -4,7 +4,7 @@ import { useAuth } from '../services/AuthContext';
 import { ScoreService } from '../services/scoreService';
 import ScoreHistory from '../components/ScoreHistory';
 import { Facebook, Instagram, Linkedin, MessageCircle } from 'lucide-react';
-
+import { supabase } from '../services/supabase';
 
 // Utility function to determine heart image based on date
 const getHeartImageForDate = (date, isActive) => {
@@ -15,6 +15,8 @@ const getHeartImageForDate = (date, isActive) => {
     return isActive ? '/assets/images/ui/orangeheart.svg' : '/assets/images/ui/orangeheart-empty.svg';
   }
 };
+
+const MemoizedScoreHistory = React.memo(ScoreHistory);
 
 const StatsAndStreaks = () => {
   const navigate = useNavigate();
@@ -27,8 +29,6 @@ const StatsAndStreaks = () => {
     barPerformance: [0, 0, 0, 0],
     lastPlayedDate: new Date()
   });
-
-  
 
   const handleShare = (platform) => {
     const date = new Date().toLocaleDateString('en-US', {
@@ -84,45 +84,71 @@ const StatsAndStreaks = () => {
   };
 
   const loadStats = useCallback(async () => {
-    if (!user) {
-      navigate('/');
-      return;
-    }
     try {
-      setLoading(true);
+      console.log('Starting loadStats...');
+      
+      // Check session first
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      console.log('Session check:', { session, error: sessionError });
+  
+      // If no valid session and no error, return without redirect
+      if (!session && !sessionError) {
+        setLoading(false);
+        return;
+      }
+  
+      // If session error, log and return
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+        setLoading(false);
+        return;
+      }
+  
+      // Check for user
+      if (!user?.id) {
+        console.log('No user ID available');
+        setLoading(false);
+        return;
+      }
+  
+      console.log('Fetching stats for user:', user.id);
       const userStats = await ScoreService.getUserStats(user.id);
+      console.log('Received stats:', userStats);
+  
       setStats({
         ...userStats,
         lastPlayedDate: new Date(userStats.lastPlayedDate || new Date())
       });
+  
+      setLoading(false);
     } catch (error) {
-      console.error('Error loading stats:', error);
-    } finally {
+      console.error('Error in loadStats:', error);
       setLoading(false);
     }
-  }, [user, navigate]);
+  }, [user]);
 
   useEffect(() => {
+    if (!user?.id) {
+      console.log('No user ID, skipping stats load');
+      return;
+    }
+  
+    console.log('Loading stats for user:', user.id);
     loadStats();
-  }, [loadStats]);
-
-  useEffect(() => {
-    const handleFocus = () => {
-      loadStats();
-    };
-
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) {
+  
+    // Handle visibility changes
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user?.id) {
         loadStats();
       }
-    });
-
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleFocus);
     };
-  }, [loadStats]);
+  
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+  
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [loadStats, user]);
 
   if (loading) {
     return (
@@ -277,7 +303,7 @@ const StatsAndStreaks = () => {
 
           {/* Calendar */}
           <div className="lg:w-1/2">
-            <ScoreHistory userId={user.id} />
+            <MemoizedScoreHistory userId={user.id} />
           </div>
         </div>
       </div>

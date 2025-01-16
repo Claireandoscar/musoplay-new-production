@@ -152,10 +152,19 @@ function GameApp() {
     { id: 8, color: 'red', noteNumber: 8 },
   ];
 
-  const handleStartGame = () => {   
+  const handleStartGame = async () => {   
     console.log('handleStartGame called');    
     if (!isPreloading && isAudioLoaded) {
       console.log('Conditions passed, starting game');
+      
+      // Initialize audio context after user interaction
+      try {
+        await audioEngine.init();
+        console.log('Audio context initialized');
+      } catch (error) {
+        console.error('Audio initialization error:', error);
+      }
+      
       setShowInstructions(false);
       setGameMode('initial');
         
@@ -174,7 +183,7 @@ function GameApp() {
     } else {
       console.log('Game not starting because:', { isPreloading, isAudioLoaded });
     }
-  };
+};
   // Define loadAudio callback - combined version
   const loadAudio = useCallback(async (barIndex) => {
     console.log('GamePlay LoadAudio called with barIndex:', barIndex);
