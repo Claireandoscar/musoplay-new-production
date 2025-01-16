@@ -9,7 +9,6 @@ import ProgressBar from './components/ProgressBar';
 import EndGameAnimation from './components/EndGameAnimation';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../services/AuthContext';
-import { ScoreService } from '../services/scoreService';
 import { audioFetchService } from '../services/audioFetchService';
 import InstructionsPopup from './components/InstructionsPopup';
 
@@ -177,36 +176,28 @@ function WarmUpGame() {
   };
   // Define loadAudio callback - combined version
   const loadAudio = useCallback(async (barIndex) => {
-    console.log('LoadAudio called with barIndex:', barIndex);
-    console.log('Current audioFiles:', audioFiles);
-    
+    console.log('GamePlay WarmUp LoadAudio called with barIndex:', barIndex);
+      
     if (audioFiles.length === 0 || barIndex >= audioFiles.length) {
-        console.log('No audio files available or invalid bar index');
-        setIsAudioLoaded(false);
-        return;
+      console.log('No warm-up audio files available or invalid bar index');
+      setIsAudioLoaded(false);
+      return;
     }
-
+  
     try {
-        const audioPath = audioFiles[barIndex];
-        console.log('Loading audio from path:', audioPath);
-        
-        // Removed currentGameNumber parameter
-        await audioEngine.loadSound(audioPath, `melody${barIndex}`);
-        
-        // Create Audio object
-        const audio = new Audio(audioPath);
-        setMelodyAudio(audio);
-        
-        setIsAudioLoaded(true);
-        console.log('Audio successfully loaded, isAudioLoaded set to true');
-        
-        return audio;
+      const audioPath = audioFiles[barIndex];
+      console.log('Loading audio from next warm-up bar path:', audioPath);
+      await audioEngine.loadSound(audioPath, `melody${barIndex}`);
+      const audio = new Audio(audioPath);
+      setMelodyAudio(audio);
+      console.log('Next warm-up bar audio successfully loaded');
+      return audio;
     } catch (error) {
-        console.error('Failed to load audio:', error);
-        setIsAudioLoaded(false);
-        return null;
+      console.error('Failed to load next warm-up bar audio:', error);
+      setIsAudioLoaded(false);
+      return null;
     }
-}, [audioFiles]); // Added missing dependencies
+  }, [audioFiles]);
 
 useEffect(() => {
   const checkAuth = async () => {
@@ -222,6 +213,22 @@ useEffect(() => {
 
 
 useEffect(() => {
+  const loadInitialAudio = async (barIndex, audioPath) => {
+    console.log('Initial warm-up audio loading for first bar:', barIndex);
+    try {
+      await audioEngine.loadSound(audioPath, `melody${barIndex}`);
+      const audio = new Audio(audioPath);
+      setMelodyAudio(audio);
+      setIsAudioLoaded(true);
+      console.log('Initial warm-up audio successfully loaded');
+      return audio;
+    } catch (error) {
+      console.error('Failed to load initial warm-up audio:', error);
+      setIsAudioLoaded(false);
+      return null;
+    }
+  };
+
   const fetchAndInitAudio = async () => {
     try {
       console.log('Starting warm-up audio setup...');
@@ -257,8 +264,10 @@ useEffect(() => {
           setAudioFiles(melodyData.melodyParts);
           setFullTunePath(melodyData.fullTune);
           
-          // Load the first bar
-          await loadAudio(0);
+          // Use loadInitialAudio instead of loadAudio
+          if (melodyData.melodyParts.length > 0) {
+            await loadInitialAudio(0, melodyData.melodyParts[0]);
+          }
         } else {
           throw new Error('Warm-up melody not for this week');
         }
@@ -267,7 +276,9 @@ useEffect(() => {
         const fallbackData = await audioFetchService.fetchWarmupFallbackAudio();
         setAudioFiles(fallbackData.melodyParts);
         setFullTunePath(fallbackData.fullTune);
-        await loadAudio(0);
+        if (fallbackData.melodyParts.length > 0) {
+          await loadInitialAudio(0, fallbackData.melodyParts[0]);
+        }
       }
 
       setIsAudioLoaded(true);
@@ -286,10 +297,10 @@ useEffect(() => {
   return () => {
     console.log('Cleaning up warm-up audio setup');
   };
-}, []); // Remove loadAudio dependency
+}, []); // Empty dependency array as this should only run once on mount
   // Keep this useEffect for loading melodies when bar changes
   useEffect(() => {
-    if (correctSequence.length > 0) {
+    if (correctSequence.length > 0 && currentBarIndex > 0) { // Only load subsequent bars
       loadAudio(currentBarIndex);
     }
   }, [currentBarIndex, correctSequence, loadAudio]);
@@ -454,68 +465,9 @@ const moveToNextBar = useCallback((isSuccess = true) => {
   }
   
   const handleGameEnd = async () => {
-    console.log('handleGameEnd triggered', { 
-      score,
-      barHearts: gameState.barHearts,
-      user: user?.id 
-    });
+    console.log('Warm-up game ending with score:', score);
     
-    console.log('Game ending with score:', score);
-    try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      console.log('Auth check:', { user, authError });
-  
-      if (user) {
-        // Record in game_scores table (removed existingScore check)
-        await ScoreService.recordGameScore(user.id, gameState.barHearts);
-  
-        // First try to get current stats
-        let { data: currentStats, error: fetchError } = await supabase
-          .from('user_stats')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-  
-        console.log('Current stats:', { currentStats, fetchError });
-  
-        if (!currentStats) {
-          // Insert initial stats
-          const { data: insertData, error: insertError } = await supabase
-            .from('user_stats')
-            .insert({
-              id: user.id,
-              current_streak: 1,
-              best_streak: 1,
-              total_games_played: 1,
-              total_perfect_scores: score === 16 ? 1 : 0,
-              last_played_at: new Date().toISOString()
-            })
-            .select();
-  
-          console.log('Insert result:', { insertData, insertError });
-        } else {
-          // Update existing stats
-          const lastPlayed = new Date(currentStats.last_played_at);
-          const today = new Date();
-  
-          const { data: updateData, error: updateError } = await supabase
-            .from('user_stats')
-            .update({
-              total_games_played: currentStats.total_games_played + 1,
-              total_perfect_scores: currentStats.total_perfect_scores + (score === 16 ? 1 : 0),
-              last_played_at: new Date().toISOString()
-            })
-            .eq('id', user.id)
-            .select();
-  
-          console.log('Update result:', { updateData, updateError });
-        }
-      }
-    } catch (error) {
-      console.error('Detailed error in handleGameEnd:', error);
-    }
-  
-    // Continue with game end animation regardless of score recording
+    // Continue with game end animation - warm-up mode doesn't affect stats
     setIsGameComplete(true);
     setIsGameEnded(true);
     setGameMode('ended');
@@ -534,7 +486,8 @@ const moveToNextBar = useCallback((isSuccess = true) => {
       fullTuneMelodyAudio.currentTime = 0;
       fullTuneMelodyAudio.play().catch(error => console.error("Audio playback failed:", error));
     }
-  };
+};
+  
   const handleNextBar = async () => {
     dispatch({
       type: 'UPDATE_COMPLETED_BARS',
@@ -582,7 +535,6 @@ const moveToNextBar = useCallback((isSuccess = true) => {
   score,
   setShowFirstNoteHint,
   fullTuneMelodyAudio,
-  gameState.barHearts
 ]);
 // eslint-disable-next-line no-unused-vars
 const handleGameReset = () => {

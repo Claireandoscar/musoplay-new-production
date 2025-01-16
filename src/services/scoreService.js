@@ -14,26 +14,82 @@ export const ScoreService = {
     return utcDate;
   },
 
+  _calculateStreak(currentStats, now) {
+    console.log('Calculating streak with:', {
+      currentStats,
+      now: now.toISOString()
+    });
+
+    let newCurrentStreak = 1;
+    let newBestStreak = currentStats?.best_streak || 1;
+
+    if (currentStats?.last_played_at) {
+      const lastPlayed = new Date(currentStats.last_played_at);
+      
+      // Make sure we're comparing dates without time
+      const lastPlayedDate = new Date(lastPlayed.toDateString());
+      const nowDate = new Date(now.toDateString());
+      
+      // Calculate days between plays (inclusive of played days)
+      const timeDiff = Math.abs(nowDate - lastPlayedDate);
+      const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+      
+      console.log('Streak calculation:', {
+        lastPlayedDate: lastPlayedDate.toISOString(),
+        nowDate: nowDate.toISOString(),
+        daysDiff
+      });
+
+      if (daysDiff === 0) {
+        // Same day play - maintain streak
+        newCurrentStreak = currentStats.current_streak || 1;
+      } else if (daysDiff === 1) {
+        // Next day play - increment streak
+        newCurrentStreak = (currentStats.current_streak || 0) + 1;
+      } else {
+        // Gap in play - reset streak
+        newCurrentStreak = 1;
+      }
+
+      // Update best streak if current is higher
+      newBestStreak = Math.max(newBestStreak, newCurrentStreak);
+    }
+
+    console.log('New streak values:', {
+      newCurrentStreak,
+      newBestStreak
+    });
+
+    return { newCurrentStreak, newBestStreak };
+  },  // Added missing comma here
+
   async recordGameScore(userId, barScores, melodyId = null) {
     console.log('recordGameScore called with:', { userId, barScores, melodyId });
     
     try {
       const totalScore = barScores.reduce((sum, score) => sum + score, 0);
+      // ... rest of the function
       const perfectBars = barScores.filter(score => score === 4).length;
-      const utcNow = new Date().toISOString();
+      const now = new Date();
+      const utcNow = now.toISOString();
 
       console.log('Processing score:', { totalScore, perfectBars, utcNow });
 
-      const startOfDay = this._getUTCStartOfDay();
-      const endOfDay = this._getUTCEndOfDay();
+      // First get current stats for streak calculation
+      const { data: currentStats } = await supabase
+        .from('user_stats')
+        .select('*')
+        .eq('id', userId)
+        .single();
 
-      console.log('Time range:', { 
-        startOfDay: startOfDay.toISOString(), 
-        endOfDay: endOfDay.toISOString() 
-      });
+      // Calculate new streak values
+      const { newCurrentStreak, newBestStreak } = this._calculateStreak(currentStats, now);
 
       // Record the game score
-      console.log('Attempting to record score in Supabase...');
+      console.log('Recording score with calculated streaks:', {
+        currentStreak: newCurrentStreak,
+        bestStreak: newBestStreak
+      });
       
       const { data: insertedScore, error: insertError } = await supabase
         .from('game_scores')
@@ -55,26 +111,18 @@ export const ScoreService = {
 
       console.log('Score recorded successfully:', insertedScore);
       
-      // Update user stats
-      console.log('Attempting to update user stats...');
-      
-      const { data: currentStats } = await supabase
-        .from('user_stats')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      const now = new Date();
+      // Update user stats with new streak values
+      console.log('Updating user stats with new streaks...');
       
       if (currentStats) {
-        console.log('Updating existing user stats:', currentStats);
-        
         const { error: updateError } = await supabase
           .from('user_stats')
           .update({
             total_games_played: currentStats.total_games_played + 1,
             total_perfect_scores: currentStats.total_perfect_scores + (totalScore === 16 ? 1 : 0),
-            last_played_at: now.toISOString()
+            current_streak: newCurrentStreak,
+            best_streak: newBestStreak,
+            last_played_at: utcNow
           })
           .eq('id', userId);
 
@@ -83,17 +131,15 @@ export const ScoreService = {
           throw updateError;
         }
       } else {
-        console.log('Creating new user stats record');
-        
         const { error: insertError } = await supabase
           .from('user_stats')
           .insert({
             id: userId,
             total_games_played: 1,
             total_perfect_scores: totalScore === 16 ? 1 : 0,
-            current_streak: 1,
-            best_streak: 1,
-            last_played_at: now.toISOString()
+            current_streak: newCurrentStreak,
+            best_streak: newBestStreak,
+            last_played_at: utcNow
           });
 
         if (insertError) {
@@ -102,7 +148,7 @@ export const ScoreService = {
         }
       }
 
-      console.log('All updates completed successfully');
+      console.log('Streak update completed successfully');
       return insertedScore;
     } catch (error) {
       console.error('Error in recordGameScore:', error);
@@ -121,10 +167,7 @@ export const ScoreService = {
         .order('played_at', { ascending: false })
         .limit(limit);
 
-      if (error) {
-        console.error('Error fetching score history:', error);
-        throw error;
-      }
+      if (error) throw error;
 
       console.log('Score history fetched:', data);
       return data;
@@ -155,12 +198,7 @@ export const ScoreService = {
         .order('played_at', { ascending: false })
         .limit(1);
 
-      if (todayError) {
-        console.error('Error fetching today\'s games:', todayError);
-        throw todayError;
-      }
-
-      console.log('Today\'s games:', todayGames);
+      if (todayError) throw todayError;
 
       const { data: userData, error: userError } = await supabase
         .from('user_stats')
@@ -169,11 +207,8 @@ export const ScoreService = {
         .single();
 
       if (userError && userError.code !== 'PGRST116') {
-        console.error('Error fetching user stats:', userError);
         throw userError;
       }
-
-      console.log('User stats:', userData);
 
       return {
         currentStreak: userData?.current_streak || 0,

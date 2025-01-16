@@ -120,7 +120,6 @@ function GameApp() {
   console.log('Current authenticated user:', user); 
   const [gameState, dispatch] = useReducer(gameReducer, initialGameState);
   
-  const [isSunday, setIsSunday] = useState(false);
 
   // Audio-related states
   const [isPreloading, setIsPreloading] = useState(true);
@@ -178,36 +177,28 @@ function GameApp() {
   };
   // Define loadAudio callback - combined version
   const loadAudio = useCallback(async (barIndex) => {
-    console.log('LoadAudio called with barIndex:', barIndex);
-    console.log('Current audioFiles:', audioFiles);
-    
+    console.log('GamePlay LoadAudio called with barIndex:', barIndex);
+      
     if (audioFiles.length === 0 || barIndex >= audioFiles.length) {
-        console.log('No audio files available or invalid bar index');
-        setIsAudioLoaded(false);
-        return;
+      console.log('No audio files available or invalid bar index');
+      setIsAudioLoaded(false);
+      return;
     }
-
+  
     try {
-        const audioPath = audioFiles[barIndex];
-        console.log('Loading audio from path:', audioPath);
-        
-        // Removed currentGameNumber parameter
-        await audioEngine.loadSound(audioPath, `melody${barIndex}`);
-        
-        // Create Audio object
-        const audio = new Audio(audioPath);
-        setMelodyAudio(audio);
-        
-        setIsAudioLoaded(true);
-        console.log('Audio successfully loaded, isAudioLoaded set to true');
-        
-        return audio;
+      const audioPath = audioFiles[barIndex];
+      console.log('Loading audio from next bar path:', audioPath);
+      await audioEngine.loadSound(audioPath, `melody${barIndex}`);
+      const audio = new Audio(audioPath);
+      setMelodyAudio(audio);
+      console.log('Next bar audio successfully loaded');
+      return audio;
     } catch (error) {
-        console.error('Failed to load audio:', error);
-        setIsAudioLoaded(false);
-        return null;
+      console.error('Failed to load next bar audio:', error);
+      setIsAudioLoaded(false);
+      return null;
     }
-}, [audioFiles]); // Added missing dependencies
+  }, [audioFiles]); // Dependencies remain the same
 
 useEffect(() => {
   const checkAuth = async () => {
@@ -224,6 +215,22 @@ useEffect(() => {
 
 // eslint-disable-next-line react-hooks/exhaustive-deps
 useEffect(() => {
+  const loadInitialAudio = async (barIndex, audioPath) => {
+    console.log('Initial audio loading for first bar:', barIndex);
+    try {
+      await audioEngine.loadSound(audioPath, `melody${barIndex}`);
+      const audio = new Audio(audioPath);
+      setMelodyAudio(audio);
+      setIsAudioLoaded(true);
+      console.log('Initial audio successfully loaded');
+      return audio;
+    } catch (error) {
+      console.error('Failed to load initial audio:', error);
+      setIsAudioLoaded(false);
+      return null;
+    }
+  };
+
   const fetchAndInitAudio = async () => {
     try {
       console.log('Starting audio setup...');
@@ -243,12 +250,13 @@ useEffect(() => {
         await audioEngine.loadSound(`/assets/audio/n${i}.mp3`, `n${i}`);
       }
       
+      // Load UI sounds
       await audioEngine.loadSound('/assets/audio/ui-sounds/wrong-note.mp3', 'wrong');
       await audioEngine.loadSound('/assets/audio/ui-sounds/bar-failed.mp3', 'fail');
       await audioEngine.loadSound('/assets/audio/ui-sounds/bar-complete.mp3', 'complete');
       await audioEngine.loadSound('/assets/audio/ui-sounds/note-flip.mp3', 'flip');
 
-      // Then fetch melody files
+      // Fetch melody files
       console.log('Fetching melody files...');
       try {
         const melodyData = await audioFetchService.fetchSupabaseAudio();
@@ -259,8 +267,10 @@ useEffect(() => {
           setAudioFiles(melodyData.melodyParts);
           setFullTunePath(melodyData.fullTune);
           
-          // Load the first bar
-          await loadAudio(0);
+          // Load first bar
+          if (melodyData.melodyParts.length > 0) {
+            await loadInitialAudio(0, melodyData.melodyParts[0]);
+          }
         } else {
           throw new Error('Melody not for today');
         }
@@ -269,7 +279,9 @@ useEffect(() => {
         const fallbackData = await audioFetchService.fetchFallbackAudio();
         setAudioFiles(fallbackData.melodyParts);
         setFullTunePath(fallbackData.fullTune);
-        await loadAudio(0);
+        if (fallbackData.melodyParts.length > 0) {
+          await loadInitialAudio(0, fallbackData.melodyParts[0]);
+        }
       }
 
       setIsAudioLoaded(true);
@@ -284,15 +296,10 @@ useEffect(() => {
   };
 
   fetchAndInitAudio();
-
-  return () => {
-    console.log('Cleaning up audio setup');
-    // Any cleanup needed
-  };
-}, []); // Remove loadAudio dependency
+}, []); // Empty dependency array as this should only run once on mount
   // Keep this useEffect for loading melodies when bar changes
   useEffect(() => {
-    if (correctSequence.length > 0) {
+    if (correctSequence.length > 0 && currentBarIndex > 0) { // Only load subsequent bars
       loadAudio(currentBarIndex);
     }
   }, [currentBarIndex, correctSequence, loadAudio]);
@@ -447,17 +454,6 @@ useEffect(() => {
     };
 }, [melodyAudio]);
 
-useEffect(() => {
-  const checkDay = () => {
-      setIsSunday(new Date().getDay() === 0);
-  };
-  
-  checkDay();
-  const interval = setInterval(checkDay, 3600000); // Check every hour
-  
-  return () => clearInterval(interval);
-}, []);
-
 const moveToNextBar = useCallback((isSuccess = true) => {
   // Reset hint state when moving to next bar
   setShowFirstNoteHint(false);
@@ -596,7 +592,8 @@ const moveToNextBar = useCallback((isSuccess = true) => {
   score,
   setShowFirstNoteHint,
   fullTuneMelodyAudio,
-  gameState.barHearts
+  gameState.barHearts,
+  user?.id 
 ]);
 // eslint-disable-next-line no-unused-vars
 const handleGameReset = () => {
