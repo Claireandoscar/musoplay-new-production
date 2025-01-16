@@ -505,9 +505,6 @@ const moveToNextBar = useCallback((isSuccess = true) => {
           console.log('Insert result:', { insertData, insertError });
         } else {
           // Update existing stats
-          const lastPlayed = new Date(currentStats.last_played_at);
-          const today = new Date();
-  
           const { data: updateData, error: updateError } = await supabase
             .from('user_stats')
             .update({

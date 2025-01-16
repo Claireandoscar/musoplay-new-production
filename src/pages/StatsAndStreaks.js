@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../services/AuthContext';
 import { ScoreService } from '../services/scoreService';
 import ScoreHistory from '../components/ScoreHistory';
 import { Facebook, Instagram, Linkedin, MessageCircle } from 'lucide-react';
+
 
 // Utility function to determine heart image based on date
 const getHeartImageForDate = (date, isActive) => {
@@ -26,6 +27,8 @@ const StatsAndStreaks = () => {
     barPerformance: [0, 0, 0, 0],
     lastPlayedDate: new Date()
   });
+
+  
 
   const handleShare = (platform) => {
     const date = new Date().toLocaleDateString('en-US', {
@@ -80,7 +83,7 @@ const StatsAndStreaks = () => {
     }
   };
 
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     if (!user) {
       navigate('/');
       return;
@@ -97,11 +100,11 @@ const StatsAndStreaks = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, navigate]);
 
   useEffect(() => {
     loadStats();
-  }, [user, navigate]);
+  }, [loadStats]);
 
   useEffect(() => {
     const handleFocus = () => {
@@ -119,7 +122,7 @@ const StatsAndStreaks = () => {
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleFocus);
     };
-  }, []);
+  }, [loadStats]);
 
   if (loading) {
     return (

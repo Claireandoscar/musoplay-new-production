@@ -1,21 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import './ProgressBar.css';
 
 function ProgressBar({ completedBars }) {
-  const [isSunday, setIsSunday] = useState(false);
   const progress = (completedBars / 4) * 100;
-
-  useEffect(() => {
-    const checkDay = () => {
-      setIsSunday(new Date().getDay() === 0);
-    };
-    
-    checkDay();
-    const interval = setInterval(checkDay, 3600000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Change this line to always use blue
   const themeColor = '#1174B9';
 
   return (
