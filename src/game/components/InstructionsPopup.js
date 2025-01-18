@@ -1,4 +1,34 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+
+const LoadingCountdown = ({ onComplete }) => {
+  const [count, setCount] = useState(5);
+  const [isCountingDown, setIsCountingDown] = useState(true);
+
+  useEffect(() => {
+    if (count === 0) {
+      setIsCountingDown(false);
+      onComplete?.();
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setCount(prev => prev - 1);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [count, onComplete]);
+
+  return (
+    <div className="flex flex-col items-center justify-center py-3 px-12">
+      <div className="text-4xl font-['Patrick_Hand_SC'] text-[#1174B9] animate-pulse min-h-[48px]">
+        {isCountingDown ? count : 'Ready!'}
+      </div>
+      <div className="text-lg font-['Patrick_Hand_SC'] text-[#1174B9]">
+        {isCountingDown ? 'Loading your melody...' : 'Let\'s play!'}
+      </div>
+    </div>
+  );
+};
 
 const InstructionsPopup = ({
   isPreloading,
@@ -6,6 +36,19 @@ const InstructionsPopup = ({
   onStartGame,
   gameMode = 'main'
 }) => {
+  const [hasCompletedCountdown, setHasCompletedCountdown] = useState(false);
+
+  const handleCountdownComplete = () => {
+    setHasCompletedCountdown(true);
+  };
+
+  // Reset state when isPreloading changes
+  useEffect(() => {
+    if (isPreloading) {
+      setHasCompletedCountdown(false);
+    }
+  }, [isPreloading]);
+
   const getHeartImage = () => {
     if (gameMode === 'warmup') return 'greenheart.svg';
     return new Date().getDay() === 0 ? 'heart.svg' : 'orangeheart.svg';
@@ -102,27 +145,31 @@ const InstructionsPopup = ({
             CAN YOU HIT THE RIGHT NOTES?
           </p>
 
-          {/* Play button */}
+          {/* Play button or Loading countdown */}
           <div className="flex justify-center">
-            <button
-              onClick={onStartGame}
-              disabled={isPreloading || !isAudioLoaded}
-              className={`
-                font-['Patrick_Hand_SC'] text-3xl
-                bg-[#1174B9] text-white
-                rounded-full px-12 py-3
-                border-2 border-[#1174B9]
-                flex items-center justify-center
-                transition-all duration-200
-                animate-pulse
-                ${isPreloading || !isAudioLoaded
-                  ? 'opacity-50 cursor-not-allowed'
-                  : 'hover:bg-white hover:text-[#1174B9] hover:scale-105 hover:animate-none'
-                }
-              `}
-            >
-              PLAY
-            </button>
+            {!hasCompletedCountdown ? (
+              <LoadingCountdown onComplete={handleCountdownComplete} />
+            ) : (
+              <button
+                onClick={onStartGame}
+                disabled={!isAudioLoaded}
+                className={`
+                  font-['Patrick_Hand_SC'] text-3xl
+                  bg-[#1174B9] text-white
+                  rounded-full px-12 py-3
+                  border-2 border-[#1174B9]
+                  flex items-center justify-center
+                  transition-all duration-200
+                  animate-pulse
+                  ${!isAudioLoaded
+                    ? 'opacity-50 cursor-not-allowed'
+                    : 'hover:bg-white hover:text-[#1174B9] hover:scale-105 hover:animate-none'
+                  }
+                `}
+              >
+                PLAY
+              </button>
+            )}
           </div>
         </div>
       </div>
