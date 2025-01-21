@@ -1,31 +1,29 @@
-/* Font declarations */
+/* Import the font first (if using Google Fonts) */
+@import url('https://fonts.googleapis.com/css2?family=Patrick+Hand+SC&display=swap');
+
+/* Then declare it */
 @font-face {
-    font-family: 'Patrick Hand SC';
-    src: url('https://use.typekit.net/hit2zms.css');
-    font-display: swap;
-  }
-  
-  /* Global font class */
-  .font-patrick {
-    font-family: 'Patrick Hand SC', cursive;
-  }
-  
-  /* Brand colors - can be accessed globally */
-  :root {
-    --color-background: #fffdee;
-    --color-background-alt: #fffff5;
-    --color-writing: #1174B9;
-    --color-special: #AB08FF;
-    --color-easy: #00C22D;
-    --color-medium: #FF8A20;
-    --color-hard: #FF2376;
-  }
-  
-  /* Basic color classes if needed outside of Tailwind */
-  .bg-background { background-color: var(--color-background); }
-  .bg-background-alt { background-color: var(--color-background-alt); }
-  .text-writing { color: var(--color-writing); }
-  .text-special { color: var(--color-special); }
-  .text-easy { color: var(--color-easy); }
-  .text-medium { color: var(--color-medium); }
-  .text-hard { color: var(--color-hard); }
+  font-family: 'Patrick Hand SC';
+  src: url('https://use.typekit.net/hit2zms.css') format('css'),
+       url('https://fonts.googleapis.com/css2?family=Patrick+Hand+SC&display=swap') format('css');
+  font-display: swap;
+}
+
+/* Root variables for colors */
+:root {
+  --color-background: #fffdee;
+  --color-background-alt: #fffff5;
+  --color-writing: #1174B9;
+  --color-special: #AB08FF;
+  --color-easy: #00C22D;
+  --color-medium: #FF8A20;
+  --color-hard: #FF2376;
+}
+
+/* Global font class */
+.font-patrick {
+  font-family: 'Patrick Hand SC', cursive !important;
+  /* Force font loading with a fallback */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
