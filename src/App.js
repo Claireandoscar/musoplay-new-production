@@ -1,4 +1,5 @@
 import React from 'react';
+import './App.css';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import GameApp from './game/GameApp';
 import SignUpPage from './pages/SignUpPage';

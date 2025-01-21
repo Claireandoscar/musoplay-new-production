@@ -87,24 +87,20 @@ const StatsAndStreaks = () => {
     try {
       console.log('Starting loadStats...');
       
-      // Check session first
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       console.log('Session check:', { session, error: sessionError });
   
-      // If no valid session and no error, return without redirect
       if (!session && !sessionError) {
         setLoading(false);
         return;
       }
   
-      // If session error, log and return
       if (sessionError) {
         console.error('Session error:', sessionError);
         setLoading(false);
         return;
       }
   
-      // Check for user
       if (!user?.id) {
         console.log('No user ID available');
         setLoading(false);
@@ -136,7 +132,6 @@ const StatsAndStreaks = () => {
     console.log('Loading stats for user:', user.id);
     loadStats();
   
-    // Handle visibility changes
     const handleVisibilityChange = () => {
       if (!document.hidden && user?.id) {
         loadStats();
@@ -152,14 +147,14 @@ const StatsAndStreaks = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FFFDEE] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <span className="loading loading-spinner loading-lg"></span>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#FFFDEE] flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Logo */}
       <div className="p-4 flex justify-center">
         <img 
@@ -173,21 +168,21 @@ const StatsAndStreaks = () => {
         {/* Back Button */}
         <button 
           onClick={() => navigate('/')}
-          className="font-['Patrick_Hand_SC'] text-[#1174B9] border-[#1174B9] border-3 rounded-full px-6 py-2 mb-6 hover:bg-[#1174B9] hover:text-white transition-colors"
+          className="font-patrick text-writing border-writing border-3 rounded-full px-6 py-2 mb-6 hover:bg-writing hover:text-white transition-colors"
         >
           BACK TO GAME
         </button>
 
         {/* Streak Cards */}
         <div className="grid grid-cols-2 gap-4 mb-6">
-          <div className="card bg-[#FFFFF5] shadow-xl border-2 border-[#1174B9]/30 rounded-lg">
+          <div className="card bg-background-alt shadow-xl border-2 border-writing/30 rounded-lg">
             <div className="card-body p-4">
               <div className="flex justify-between items-center">
                 <div>
-                  <p className="text-sm font-['Patrick_Hand_SC'] text-[#AB08FF] mb-1">CURRENT STREAK</p>
+                  <p className="text-sm font-patrick text-special mb-1">CURRENT STREAK</p>
                   <div className="flex items-baseline">
-                    <span className="text-4xl font-['Patrick_Hand_SC'] text-[#AB08FF]">{stats.currentStreak}</span>
-                    <span className="ml-2 text-xl font-['Patrick_Hand_SC'] text-[#AB08FF]">DAYS</span>
+                    <span className="text-4xl font-patrick text-special">{stats.currentStreak}</span>
+                    <span className="ml-2 text-xl font-patrick text-special">DAYS</span>
                   </div>
                 </div>
                 <img src="/assets/images/ui/purple-streak.svg" alt="Streak" className="w-12 h-12" />
@@ -195,14 +190,14 @@ const StatsAndStreaks = () => {
             </div>
           </div>
 
-          <div className="card bg-[#FFFFF5] shadow-xl border-2 border-[#1174B9]/30 rounded-lg">
+          <div className="card bg-background-alt shadow-xl border-2 border-writing/30 rounded-lg">
             <div className="card-body p-4">
               <div className="flex justify-between items-center">
                 <div>
-                  <p className="text-sm font-['Patrick_Hand_SC'] text-[#AB08FF] mb-1">BEST STREAK</p>
+                  <p className="text-sm font-patrick text-special mb-1">BEST STREAK</p>
                   <div className="flex items-baseline">
-                    <span className="text-4xl font-['Patrick_Hand_SC'] text-[#AB08FF]">{stats.bestStreak}</span>
-                    <span className="ml-2 text-xl font-['Patrick_Hand_SC'] text-[#AB08FF]">DAYS</span>
+                    <span className="text-4xl font-patrick text-special">{stats.bestStreak}</span>
+                    <span className="ml-2 text-xl font-patrick text-special">DAYS</span>
                   </div>
                 </div>
                 <img src="/assets/images/ui/purple-trophy.svg" alt="Trophy" className="w-12 h-12" />
@@ -215,20 +210,20 @@ const StatsAndStreaks = () => {
         <div className="block lg:flex lg:gap-4">
           {/* Today's Performance */}
           <div className="lg:w-1/2 mb-6 lg:mb-0">
-            <div className="card bg-[#FFFFF5] shadow-xl border-2 border-[#1174B9]/30 rounded-lg h-full">
+            <div className="card bg-background-alt shadow-xl border-2 border-writing/30 rounded-lg h-full">
               <div className="card-body p-6">
-                <h2 className="text-2xl font-['Patrick_Hand_SC'] text-[#1174B9] mb-4">TODAY'S PERFORMANCE</h2>
+                <h2 className="text-2xl font-patrick text-writing mb-4">TODAY'S PERFORMANCE</h2>
 
                 <div className="mb-8">
-                  <p className="text-sm font-['Patrick_Hand_SC'] text-[#1174B9]">SCORE</p>
-                  <p className="text-4xl font-['Patrick_Hand_SC'] text-[#1174B9]">{stats.todayScore}/16</p>
+                  <p className="text-sm font-patrick text-writing">SCORE</p>
+                  <p className="text-4xl font-patrick text-writing">{stats.todayScore}/16</p>
                 </div>
 
                 {/* Hearts and Social Buttons Container */}
                 <div className="flex">
                   {/* Hearts Section */}
                   <div className="flex-1">
-                    <p className="text-sm font-['Patrick_Hand_SC'] text-[#1174B9] mb-4">BAR PERFORMANCE</p>
+                    <p className="text-sm font-patrick text-writing mb-4">BAR PERFORMANCE</p>
                     <div className="grid grid-rows-4 gap-4">
                       {stats.barPerformance.map((hearts, index) => (
                         <div key={index} className="flex">
@@ -252,45 +247,37 @@ const StatsAndStreaks = () => {
                       <div className="grid grid-cols-2 gap-4 mt-8">
                         <button
                           onClick={() => handleShare('facebook')}
-                          className="w-12 h-12 rounded-lg border-2 flex items-center justify-center transition-colors hover:bg-gray-50"
-                          style={{ borderColor: '#1174B9' }}
+                          className="w-12 h-12 rounded-lg border-2 border-writing flex items-center justify-center transition-colors hover:bg-gray-50"
                         >
-                          <Facebook size={24} style={{ stroke: '#1174B9' }} />
+                          <Facebook size={24} className="text-writing" />
                         </button>
 
                         <button
                           onClick={() => handleShare('instagram')}
-                          className="w-12 h-12 rounded-lg border-2 flex items-center justify-center transition-colors hover:bg-gray-50"
-                          style={{ borderColor: '#1174B9' }}
+                          className="w-12 h-12 rounded-lg border-2 border-writing flex items-center justify-center transition-colors hover:bg-gray-50"
                         >
-                          <Instagram size={24} style={{ stroke: '#1174B9' }} />
+                          <Instagram size={24} className="text-writing" />
                         </button>
 
                         <button
                           onClick={() => handleShare('whatsapp')}
-                          className="w-12 h-12 rounded-lg border-2 flex items-center justify-center transition-colors hover:bg-gray-50"
-                          style={{ borderColor: '#1174B9' }}
+                          className="w-12 h-12 rounded-lg border-2 border-writing flex items-center justify-center transition-colors hover:bg-gray-50"
                         >
-                          <MessageCircle size={24} style={{ stroke: '#1174B9' }} />
+                          <MessageCircle size={24} className="text-writing" />
                         </button>
 
                         <button
                           onClick={() => handleShare('linkedin')}
-                          className="w-12 h-12 rounded-lg border-2 flex items-center justify-center transition-colors hover:bg-gray-50"
-                          style={{ borderColor: '#1174B9' }}
+                          className="w-12 h-12 rounded-lg border-2 border-writing flex items-center justify-center transition-colors hover:bg-gray-50"
                         >
-                          <Linkedin size={24} style={{ stroke: '#1174B9' }} />
+                          <Linkedin size={24} className="text-writing" />
                         </button>
                       </div>
 
                       {/* Please Share Button */}
                       <button
                         onClick={handleNativeShare}
-                        className="w-full text-sm font-['Patrick_Hand_SC'] border-2 rounded-lg px-2 py-2 transition-colors hover:bg-gray-50"
-                        style={{ 
-                          borderColor: '#1174B9',
-                          color: '#1174B9'
-                        }}
+                        className="w-full text-sm font-patrick text-writing border-2 border-writing rounded-lg px-2 py-2 transition-colors hover:bg-gray-50"
                       >
                         PLEASE SHARE!
                       </button>
