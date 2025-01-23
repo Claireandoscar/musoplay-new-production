@@ -11,7 +11,7 @@ import { supabase } from '../services/supabase';
 import { useAuth } from '../services/AuthContext';
 import { ScoreService } from '../services/scoreService';
 import { audioFetchService } from '../services/audioFetchService';
-import InstructionsPopup from './components/InstructionsPopup';
+import InstructionsPopup from '../pages/InstructionsPopup';
 
 
 
@@ -802,16 +802,15 @@ return (
         />
       )}
     </div>
-    {/* Move Instructions Popup here, outside game-container */}
     {(showInstructions || isPreloading) && gameMode === 'initial' && currentBarIndex === 0 && (
-      <InstructionsPopup
-        isPreloading={isPreloading}
-        isAudioLoaded={isAudioLoaded}
-        onStartGame={handleStartGame}
-        gameMode="main"
-      />
-    )}
-  </div>
+  <InstructionsPopup
+    gameType="main"
+    isPreloading={isPreloading}
+    isAudioLoaded={isAudioLoaded}
+    onStartGame={handleStartGame}
+  />
+)}
+</div>
 );
 }
 

@@ -10,7 +10,7 @@ import EndGameAnimation from './components/EndGameAnimation';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../services/AuthContext';
 import { audioFetchService } from '../services/audioFetchService';
-import InstructionsPopup from './components/InstructionsPopup';
+import InstructionsPopup from '../pages/InstructionsPopup';
 
 
 
@@ -736,16 +736,15 @@ return (
         />
       )}
     </div>
-    {/* Instructions Popup outside game-container */}
     {(showInstructions || isPreloading) && gameMode === 'initial' && currentBarIndex === 0 && (
-      <InstructionsPopup
-        isPreloading={isPreloading}
-        isAudioLoaded={isAudioLoaded}
-        onStartGame={handleStartGame}
-        gameMode="warmup"
-      />
-    )}
-  </div>
+  <InstructionsPopup
+    gameType="warmup"
+    isPreloading={isPreloading}
+    isAudioLoaded={isAudioLoaded}
+    onStartGame={handleStartGame}
+  />
+)}
+</div>
 );
 }
 
