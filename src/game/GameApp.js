@@ -12,6 +12,7 @@ import { useAuth } from '../services/AuthContext';
 import { ScoreService } from '../services/scoreService';
 import { audioFetchService } from '../services/audioFetchService';
 import InstructionsPopup from '../pages/InstructionsPopup';
+import { useGame } from '../context/GameContext';
 
 
 
@@ -132,7 +133,7 @@ function GameApp() {
   const [gameMode, setGameMode] = useState('initial');
   const [score, setScore] = useState(0);
   const [currentBarIndex, setCurrentBarIndex] = useState(0);
-  const [showInstructions, setShowInstructions] = useState(true);
+  const { showInstructions, setShowInstructions } = useGame();
 
   // Sequence and completion tracking
   const [correctSequence, setCorrectSequence] = useState([]);
@@ -156,41 +157,44 @@ function GameApp() {
 const handleStartGame = useCallback(async () => {   
   console.log('handleStartGame called');    
   if (!isPreloading && isAudioLoaded) {
+    setShowInstructions(false);
     console.log('Conditions passed, starting game');
     
-    // Initialize audio context after user interaction
     try {
+      // Initialize audio
       const audioState = audioEngine.getAudioContextState();
       if (audioState.state === 'suspended') {
         await audioEngine.audioContext.resume();
       }
       console.log('Audio context initialized');
+
+      // Update instructions state
+      setShowInstructions(false);
+
+      // Initialize game state
+      setGameMode('initial');
+      dispatch({ type: 'SET_GAME_PHASE', payload: 'initial' });
+      dispatch({ type: 'UPDATE_NOTE_INDEX', payload: 0 });
+      dispatch({ type: 'RESET_BAR_HEARTS' });
+      dispatch({ type: 'RESET_COMPLETED_BARS' });
+      dispatch({ type: 'SET_BAR_FAILING', failing: false });
+      
+      // Reset game progress
+      setScore(0);
+      setCurrentBarIndex(0);
+      setIsGameComplete(false);
+      setIsGameEnded(false);
+      setShowEndAnimation(false);
+      setIsListenPracticeMode(false);
     } catch (error) {
-      console.error('Audio initialization error:', error);
+      console.error('Game initialization error:', error);
     }
-    
-    setShowInstructions(false);
-    setGameMode('initial');
-      
-    dispatch({ type: 'SET_GAME_PHASE', payload: 'initial' });
-    dispatch({ type: 'UPDATE_NOTE_INDEX', payload: 0 });
-    dispatch({ type: 'RESET_BAR_HEARTS' });
-    dispatch({ type: 'RESET_COMPLETED_BARS' });
-    dispatch({ type: 'SET_BAR_FAILING', failing: false });
-      
-    setScore(0);
-    setCurrentBarIndex(0);
-    setIsGameComplete(false);
-    setIsGameEnded(false);
-    setShowEndAnimation(false);
-    setIsListenPracticeMode(false);
   } else {
     console.log('Game not starting because:', { isPreloading, isAudioLoaded });
   }
-}, [isPreloading, isAudioLoaded, dispatch, setShowInstructions, setGameMode, 
+}, [isPreloading, isAudioLoaded, dispatch, setGameMode, 
   setScore, setCurrentBarIndex, setIsGameComplete, setIsGameEnded, 
-  setShowEndAnimation, setIsListenPracticeMode]);
-
+  setShowEndAnimation, setIsListenPracticeMode, setShowInstructions]);
 useEffect(() => {
   const checkAuth = async () => {
     const { data: { user }, error } = await supabase.auth.getUser();
@@ -802,14 +806,13 @@ return (
         />
       )}
     </div>
-    {(showInstructions || isPreloading) && gameMode === 'initial' && currentBarIndex === 0 && (
-  <InstructionsPopup
-    gameType="main"
-    isPreloading={isPreloading}
-    isAudioLoaded={isAudioLoaded}
-    onStartGame={handleStartGame}
-  />
-)}
+    <InstructionsPopup
+  gameType="main"
+  isPreloading={isPreloading}
+  isAudioLoaded={isAudioLoaded}
+  onStartGame={handleStartGame}
+  show={showInstructions}
+/>
 </div>
 );
 }

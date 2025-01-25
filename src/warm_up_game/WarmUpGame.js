@@ -131,7 +131,7 @@ function WarmUpGame() {
   const [gameMode, setGameMode] = useState('initial');
   const [score, setScore] = useState(0);
   const [currentBarIndex, setCurrentBarIndex] = useState(0);
-  const [showInstructions, setShowInstructions] = useState(true);
+ 
 
   // Sequence and completion tracking
   const [correctSequence, setCorrectSequence] = useState([]);
@@ -164,7 +164,7 @@ function WarmUpGame() {
         console.error('Audio initialization error:', error);
       }
       
-      setShowInstructions(false);
+      
       setGameMode('initial');
         
       dispatch({ type: 'SET_GAME_PHASE', payload: 'initial' });
@@ -736,14 +736,12 @@ return (
         />
       )}
     </div>
-    {(showInstructions || isPreloading) && gameMode === 'initial' && currentBarIndex === 0 && (
-  <InstructionsPopup
-    gameType="warmup"
-    isPreloading={isPreloading}
-    isAudioLoaded={isAudioLoaded}
-    onStartGame={handleStartGame}
-  />
-)}
+    <InstructionsPopup
+  gameType="warmup"
+  isPreloading={isPreloading}
+  isAudioLoaded={isAudioLoaded}
+  onStartGame={handleStartGame}
+/>
 </div>
 );
 }

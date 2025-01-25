@@ -6,8 +6,8 @@ import SignUpPage from './pages/SignUpPage';
 import StatsAndStreaks from './pages/StatsAndStreaks';
 import { AuthProvider, useAuth } from './services/AuthContext';
 import WarmUpGame from './warm_up_game/WarmUpGame';
+import { GameProvider } from './context/GameContext';
 
-// Protected Route wrapper component
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
   
@@ -28,19 +28,27 @@ function App() {
   return (
     <AuthProvider>
       <Router>
-      <Routes>
-  <Route path="/" element={<GameApp />} />
-  <Route path="/warm-up" element={<WarmUpGame />} /> {/* Make sure this is present */}
-  <Route path="/signup" element={<SignUpPage />} />
-  <Route 
-    path="/stats" 
-    element={
-      <ProtectedRoute>
-        <StatsAndStreaks />
-      </ProtectedRoute>
-    } 
-  />
-</Routes>
+        <Routes>
+          <Route path="/" element={
+            <GameProvider gameType="main">
+              <GameApp />
+            </GameProvider>
+          } />
+          <Route path="/warm-up" element={
+            <GameProvider gameType="warmup">
+              <WarmUpGame />
+            </GameProvider>
+          } />
+          <Route path="/signup" element={<SignUpPage />} />
+          <Route 
+            path="/stats" 
+            element={
+              <ProtectedRoute>
+                <StatsAndStreaks />
+              </ProtectedRoute>
+            } 
+          />
+        </Routes>
       </Router>
     </AuthProvider>
   );
