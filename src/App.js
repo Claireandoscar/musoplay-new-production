@@ -7,6 +7,7 @@ import StatsAndStreaks from './pages/StatsAndStreaks';
 import { AuthProvider, useAuth } from './services/AuthContext';
 import WarmUpGame from './warm_up_game/WarmUpGame';
 import { GameProvider } from './context/GameContext';
+import { WarmUpProvider } from './context/warmup-context';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -35,10 +36,10 @@ function App() {
             </GameProvider>
           } />
           <Route path="/warm-up" element={
-            <GameProvider gameType="warmup">
-              <WarmUpGame />
-            </GameProvider>
-          } />
+  <WarmUpProvider>
+    <WarmUpGame />
+  </WarmUpProvider>
+} />
           <Route path="/signup" element={<SignUpPage />} />
           <Route 
             path="/stats" 

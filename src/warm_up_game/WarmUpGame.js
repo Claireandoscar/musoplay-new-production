@@ -11,6 +11,7 @@ import { supabase } from '../services/supabase';
 import { useAuth } from '../services/AuthContext';
 import { audioFetchService } from '../services/audioFetchService';
 import InstructionsPopup from '../pages/InstructionsPopup';
+import { useWarmUp } from '../context/warmup-context';
 
 
 
@@ -118,7 +119,10 @@ function WarmUpGame() {
   const { user } = useAuth();
   console.log('Current authenticated user:', user); 
   const [gameState, dispatch] = useReducer(gameReducer, initialGameState);
-  
+  const { showInstructions, setShowInstructions } = useWarmUp();
+  console.log('WarmUpGame Initial Mount:', { showInstructions});
+  console.log('WarmUpGame Context Check:', { showInstructions});
+
   
   // Audio-related states
   const [isPreloading, setIsPreloading] = useState(true);
@@ -131,6 +135,7 @@ function WarmUpGame() {
   const [gameMode, setGameMode] = useState('initial');
   const [score, setScore] = useState(0);
   const [currentBarIndex, setCurrentBarIndex] = useState(0);
+ 
  
 
   // Sequence and completion tracking
@@ -154,6 +159,9 @@ function WarmUpGame() {
   const handleStartGame = async () => {   
     console.log('handleStartGame called');    
     if (!isPreloading && isAudioLoaded) {
+      console.log('WarmUpGame handleStartGame:', { isPreloading, isAudioLoaded });
+
+      setShowInstructions(false);
       console.log('Conditions passed, starting game');
       
       // Initialize audio context after user interaction
@@ -180,7 +188,7 @@ function WarmUpGame() {
       setShowEndAnimation(false);
       setIsListenPracticeMode(false);
     } else {
-      console.log('Game not starting because:', { isPreloading, isAudioLoaded });
+      console.log('Game not starting because:', { isPreloading, isAudioLoaded, setShowInstructions});
     }
 };
   // Define loadAudio callback - combined version
@@ -692,6 +700,7 @@ const handleNotePlay = useCallback(async (noteNumber) => {
 
 return (
   <div className="game-wrapper warm-up-game-instance"> 
+  {console.log('WarmUpGame Instructions Render:', { showInstructions, isPreloading, isAudioLoaded })}
     <div className={`game-container ${gameMode}`}>
       <HeaderToolbar />
       <GameBoard 
@@ -735,13 +744,14 @@ return (
           barHearts={gameState.barHearts}
         />
       )}
-    </div>
-    <InstructionsPopup
+<InstructionsPopup 
   gameType="warmup"
   isPreloading={isPreloading}
   isAudioLoaded={isAudioLoaded}
   onStartGame={handleStartGame}
+  show={showInstructions}
 />
+    </div> 
 </div>
 );
 }

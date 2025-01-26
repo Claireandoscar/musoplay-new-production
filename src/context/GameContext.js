@@ -3,32 +3,29 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 const GameContext = createContext();
 
 export function GameProvider({ children, gameType = 'main' }) {
+  // Clear storage for testing
+  useEffect(() => {
+    sessionStorage.removeItem('warmupInstructionsShown');
+    console.log('Storage cleared for testing');
+  }, []);
+
   const [showInstructions, setShowInstructions] = useState(() => {
-    const hasSeenWarmup = sessionStorage.getItem('warmupInstructionsSeen');
-    if (gameType === 'warmup' && !hasSeenWarmup) {
-      return true;
-    }
-    const lastShownTime = sessionStorage.getItem(`${gameType}InstructionsShown`);
-    return !lastShownTime;
+    const stored = sessionStorage.getItem('warmupInstructionsShown');
+    console.log('GameProvider init:', { gameType, stored });
+    return stored !== 'true';
   });
 
   useEffect(() => {
+    console.log('GameProvider effect:', { showInstructions, gameType });
     if (!showInstructions) {
-      if (gameType === 'warmup') {
-        sessionStorage.setItem('warmupInstructionsSeen', 'true');
-      }
-      sessionStorage.setItem(`${gameType}InstructionsShown`, Date.now().toString());
+      sessionStorage.setItem('warmupInstructionsShown', 'true');
     }
   }, [showInstructions, gameType]);
 
-  const value = {
-    showInstructions,
-    setShowInstructions,
-    gameType
-  };
-
   return (
-    <GameContext.Provider value={value}>{children}</GameContext.Provider>
+    <GameContext.Provider value={{ showInstructions, setShowInstructions, gameType }}>
+      {children}
+    </GameContext.Provider>
   );
 }
 
@@ -37,6 +34,7 @@ export function useGame() {
   if (!context) {
     throw new Error('useGame must be used within GameProvider');
   }
+  console.log('useGame hook called:', context);
   return context;
 }
 
