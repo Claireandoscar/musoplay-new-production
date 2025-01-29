@@ -812,6 +812,7 @@ return (
   isAudioLoaded={isAudioLoaded}
   onStartGame={handleStartGame}
   show={showInstructions}
+  showCountdown={true}  // Add only this new prop
 />
 </div>
 );

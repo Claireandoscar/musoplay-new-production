@@ -1,13 +1,19 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import './HeaderToolbar.css';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../services/AuthContext';
+import DropDown from './DropDown'; 
 
 const HeaderToolbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const isWarmUpMode = location.pathname === '/warm-up';
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+  const helpButtonRef = useRef(null);
   useAuth();
+
+
 
   const handleStatsClick = () => {
     console.log('Stats button clicked');
@@ -27,10 +33,10 @@ const HeaderToolbar = () => {
       navigate('/warm-up');
     }
   };
-
-  const handleHelpClick = () => {
-    console.log('Help button clicked');
-    // Add help logic later
+  const handleHelpClick = (e) => {
+    e.stopPropagation();  // Prevent event bubbling
+    console.log('Help button clicked, current state:', isDropdownOpen);
+    setIsDropdownOpen(!isDropdownOpen);
   };
 
   const handleSubscribeClick = () => {
@@ -84,11 +90,14 @@ const HeaderToolbar = () => {
           />
         </button>
         <button 
-          className="toolbar-button"
-          onClick={handleHelpClick}
-          title="Help"
-          data-testid="help-button"
-        >
+  className="toolbar-button relative"  // Added 'relative' here
+  onClick={handleHelpClick}
+  ref={helpButtonRef}
+  title="Help"
+  data-testid="help-button"
+  aria-expanded={isDropdownOpen}
+  aria-haspopup="true"
+>
           <img 
             src="/assets/images/ui/blue-question.svg"
             alt="Help" 
@@ -123,6 +132,14 @@ const HeaderToolbar = () => {
       <div className="logo-wrapper">
         <img src="/assets/images/ui/logo.svg" alt="Musoplay Logo" className="logo" />
       </div>
+
+      <DropDown 
+        isOpen={isDropdownOpen}
+        onClose={() => setIsDropdownOpen(false)}
+        buttonRef={helpButtonRef}
+        dropdownRef={dropdownRef}
+        isWarmUpMode={isWarmUpMode} 
+      />
     </div>
   );
 };
