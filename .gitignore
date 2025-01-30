@@ -2,3 +2,8 @@ node_modules
 node_modules
 .DS_Store
 **/.DS_Store
+# Scripts and utility files
+/scripts/
+scripts/createStorageFolders.js
+scripts/createAllDifficulty.js
+scripts/cleanupWarmup.js
