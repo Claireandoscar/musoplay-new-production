@@ -15,6 +15,7 @@ import { useWarmUp } from '../context/warmup-context';
 
 
 
+
 const initialGameState = {
   currentNoteIndex: 0,
   gamePhase: 'initial',

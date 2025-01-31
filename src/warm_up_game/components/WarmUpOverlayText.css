@@ -1,0 +1,12 @@
+.warmup-text-overlay {
+    font-family: 'patrick-hand-sc', cursive;
+    color: #00C22D;
+    text-align: center;
+    position: absolute;
+    width: 100%;
+    top: 70px;  /* Adjust this value to position the text exactly where needed */
+    left: 0;
+    font-size: 18px;
+    pointer-events: none;  /* Ensures it doesn't interfere with any clicks */
+    z-index: 10;  /* Ensures it appears above other elements but below any UI controls */
+  }
