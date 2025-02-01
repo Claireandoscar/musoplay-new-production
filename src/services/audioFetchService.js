@@ -3,6 +3,10 @@ import { supabase } from './supabase';
 export class AudioFetchService {
   constructor() {
     this.publicURL = null;
+    this.monthNames = [
+      'january', 'february', 'march', 'april', 'may', 'june',
+      'july', 'august', 'september', 'october', 'november', 'december'
+    ];
   }
 
   async initialize() {
@@ -23,11 +27,10 @@ export class AudioFetchService {
     const dayOfWeek = now.getDay();
     const difficulty = dayOfWeek === 0 ? 'difficult' : 'medium';
     
-    // We don't need monthNames array anymore since we're using the new format
-    
     return {
       year: year.toString(),
       month: paddedMonth,
+      monthName: this.monthNames[month],
       day,
       difficulty,
       formatted: `${year}_${paddedMonth}_${day}`
@@ -49,14 +52,9 @@ export class AudioFetchService {
     const day = String(lastSunday.getDate()).padStart(2, '0');
     const paddedMonth = String(month + 1).padStart(2, '0');
     
-    const monthNames = [
-      'january', 'february', 'march', 'april', 'may', 'june',
-      'july', 'august', 'september', 'october', 'november', 'december'
-    ];
-    
     return {
       year: year.toString(),
-      month: monthNames[month],
+      month: this.monthNames[month],
       paddedMonth,
       day,
       formatted: `${year}_${paddedMonth}_${day}`
@@ -67,9 +65,8 @@ export class AudioFetchService {
     try {
       await this.initialize();
       
-      const { year, month, day, formatted, difficulty } = this.getDateParts();
-      // New path format matching your Supabase structure: 2025_01_20_medium
-      const melodyPath = `${year}/january/${year}_${month}_${day}_${difficulty}`;
+      const { year, month, day, monthName, formatted, difficulty } = this.getDateParts();
+      const melodyPath = `${year}/${monthName}/${year}_${month}_${day}_${difficulty}`;
       
       console.log('Fetching from path:', melodyPath);
       
