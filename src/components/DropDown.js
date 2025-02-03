@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import InstructionsPopup from '../pages/InstructionsPopup';
 
 const DropDown = ({ isOpen, onClose, buttonRef, dropdownRef, isWarmUpMode }) => {
+  const navigate = useNavigate();
   const [showInstructions, setShowInstructions] = useState(false);
 
   useEffect(() => {
@@ -24,14 +26,27 @@ const DropDown = ({ isOpen, onClose, buttonRef, dropdownRef, isWarmUpMode }) => 
   }, [isOpen, onClose, buttonRef, dropdownRef]);
 
   const handleHowToPlay = () => {
-    onClose();  // Close dropdown menu first
-    setShowInstructions(true);  // Then show instructions
+    onClose();
+    setShowInstructions(true);
+  };
+
+  const handleWarmUpToggle = () => {
+    onClose();
+    if (isWarmUpMode) {
+      navigate('/');
+    } else {
+      navigate('/warm-up');
+    }
   };
 
   const menuItems = [
     { 
       label: 'How to Play', 
       action: handleHowToPlay
+    },
+    {
+      label: isWarmUpMode ? 'Back to Main Game' : 'Warm Up Game',
+      action: handleWarmUpToggle
     },
     { label: 'Archive', action: () => console.log('Archive clicked') },
     { label: 'FAQ', action: () => console.log('FAQ clicked') },

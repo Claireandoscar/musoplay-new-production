@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Facebook, Instagram, Linkedin, MessageCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import HeaderToolbar from '../../components/HeaderToolbar';
 import './EndGameAnimation.css';
 
 const EndGameAnimation = ({ score, barHearts }) => {
+  const navigate = useNavigate();
   const [animationStage, setAnimationStage] = useState(0);
   const [showText, setShowText] = useState(false);
   const [showShare, setShowShare] = useState(false);
@@ -41,59 +42,8 @@ const EndGameAnimation = ({ score, barHearts }) => {
     return () => clearTimeout(timer);
   }, [animationStage]);
 
-  const handleShare = (platform) => {
-    const date = new Date().toLocaleDateString('en-US', { 
-      month: 'long', 
-      day: 'numeric',
-      year: 'numeric'
-    });
-    
-    const shareText = `MUSOPLAY - ${date}\n${getScoringPhrase(score)}\nScore: ${score}/16`;
-    const shareUrl = 'https://musoplay.com'; // Replace with actual URL
-
-    switch (platform) {
-      case 'facebook':
-        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}`);
-        break;
-      case 'instagram':
-        alert('Screenshot and share on Instagram!');
-        break;
-      case 'whatsapp':
-        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + '\n' + shareUrl)}`);
-        break;
-      case 'linkedin':
-        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}&summary=${encodeURIComponent(shareText)}`);
-        break;
-      default:
-        break;
-    }
-  };
-
-  const handleNativeShare = async () => {
-    const date = new Date().toLocaleDateString('en-US', { 
-      month: 'long', 
-      day: 'numeric',
-      year: 'numeric'
-    });
-    
-    const shareText = `MUSOPLAY - ${date}\n${getScoringPhrase(score)}\nScore: ${score}/16`;
-    const shareUrl = 'https://musoplay.com'; // Replace with actual URL
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'MUSOPLAY Score',
-          text: shareText,
-          url: shareUrl
-        });
-      } catch (error) {
-        if (error.name !== 'AbortError') {
-          console.error('Error sharing:', error);
-        }
-      }
-    } else {
-      alert('Use the social buttons above to share your score!');
-    }
+  const handlePlayMainGame = () => {
+    navigate('/');
   };
 
   return (
@@ -103,21 +53,22 @@ const EndGameAnimation = ({ score, barHearts }) => {
       </div>
 
       <div className="animation-content">
-      {showText && (
-  <>
-    <h2 className="scoring-phrase" style={{ color: "#1174B9" }}>{getScoringPhrase(score)}</h2>
-    <div className="score-display" style={{ color: "#1174B9" }}>
-      SCORE: {score}/16
-    </div>
-    <div className="date-display" style={{ color: "#1174B9" }}>
-      {new Date().toLocaleDateString('en-US', { 
-        month: 'long', 
-        day: 'numeric',
-        year: 'numeric'
-      }).toUpperCase()}
-    </div>
-  </>
-)}
+        {showText && (
+          <>
+            <h2 className="scoring-phrase">{getScoringPhrase(score)}</h2>
+            <div className="score-display">
+              SCORE: {score}/16
+            </div>
+            <div className="date-display">
+              {new Date().toLocaleDateString('en-US', { 
+                month: 'long', 
+                day: 'numeric',
+                year: 'numeric'
+              }).toUpperCase()}
+            </div>
+          </>
+        )}
+        
         <div className="hearts-display">
           {barHearts.map((hearts, index) => (
             <div key={index} className={`bar-hearts ${animationStage > index ? 'visible' : ''}`}>
@@ -135,25 +86,11 @@ const EndGameAnimation = ({ score, barHearts }) => {
 
         {showShare && (
           <div className="share-section">
-            <div className="share-buttons">
-              <button onClick={() => handleShare('facebook')} className="share-button">
-                <Facebook />
-              </button>
-              <button onClick={() => handleShare('instagram')} className="share-button">
-                <Instagram />
-              </button>
-              <button onClick={() => handleShare('whatsapp')} className="share-button">
-                <MessageCircle />
-              </button>
-              <button onClick={() => handleShare('linkedin')} className="share-button">
-                <Linkedin />
-              </button>
-            </div>
             <button 
-              onClick={handleNativeShare}
-              className="share-text-button"
+              onClick={handlePlayMainGame}
+              className="play-main-game-button"
             >
-              PLEASE SHARE!
+              PLAY TODAY'S GAME
             </button>
           </div>
         )}

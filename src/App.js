@@ -36,16 +36,26 @@ function App() {
             </GameProvider>
           } />
           <Route path="/warm-up" element={
-  <WarmUpProvider>
-    <WarmUpGame />
-  </WarmUpProvider>
-} />
+            <WarmUpProvider>
+              <WarmUpGame />
+            </WarmUpProvider>
+          } />
           <Route path="/signup" element={<SignUpPage />} />
           <Route 
             path="/stats" 
             element={
               <ProtectedRoute>
                 <StatsAndStreaks />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/leaderboard" 
+            element={
+              <ProtectedRoute>
+                <div className="min-h-screen bg-[#FFFDEE] flex items-center justify-center font-patrick text-[#1174B9]">
+                  <p>Leaderboard Coming Soon</p>
+                </div>
               </ProtectedRoute>
             } 
           />

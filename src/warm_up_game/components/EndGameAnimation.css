@@ -162,6 +162,21 @@
   opacity: 0;
 }
 
+.header-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  opacity: 0;
+  transform: translateY(-20px);
+  transition: all 0.5s ease-out;
+}
+
+.header-container.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .share-section {
   position: absolute;
   bottom: 100px;
@@ -175,57 +190,28 @@
   animation: fadeIn 0.5s ease-out forwards;
 }
 
-.share-buttons {
-  display: flex;
-  gap: 16px;
+@media (max-height: 600px) {
+  .share-section {
+    bottom: 80px;
+  }
 }
 
-.share-button {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  border: 2.5px solid #1174B9;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  padding: 0;
-  background-color: #FFFDEE;
-  animation: gentlePulse 3s infinite;
-}
-
-.share-button svg {
-  width: 22px;
-  height: 22px;
-  stroke: #1174B9;
-  stroke-width: 2.5px;
-  fill: none;
-}
-
-.share-button:hover {
-  background-color: #1174B9;
-}
-
-.share-button:hover svg {
-  stroke: #FFFDEE;
-}
-
-.share-text-button {
+.play-main-game-button {
   color: #1174B9;
   font-size: 20px;
   font-weight: bold;
-  margin: 0;
   text-align: center;
   font-family: 'patrick-hand-sc', sans-serif;
   background: #FFFDEE;
   border: 2.5px solid #1174B9;
-  padding: 8px 16px;
+  padding: 8px 24px;
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
+  animation: gentlePulse 3s infinite;
 }
 
-.share-text-button:hover {
+.play-main-game-button:hover {
   background: #1174B9;
   color: #FFFDEE;
 }
@@ -251,40 +237,4 @@
     opacity: 1;
     transform: translate(-50%, 0);
   }
-}
-
-@media (max-height: 600px) {
-  .share-section {
-    bottom: 80px;
-  }
-  
-  .share-button {
-    width: 36px;
-    height: 36px;
-  }
-  
-  .share-button svg {
-    width: 18px;
-    height: 18px;
-  }
-  
-  .share-text-button {
-    font-size: 16px;
-    padding: 6px 12px;
-  }
-}
-
-.header-container {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  opacity: 0;
-  transform: translateY(-20px);
-  transition: all 0.5s ease-out;
-}
-
-.header-container.visible {
-  opacity: 1;
-  transform: translateY(0);
 }

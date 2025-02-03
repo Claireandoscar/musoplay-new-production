@@ -13,8 +13,6 @@ const HeaderToolbar = () => {
   const helpButtonRef = useRef(null);
   useAuth();
 
-
-
   const handleStatsClick = () => {
     console.log('Stats button clicked');
     try {
@@ -24,17 +22,17 @@ const HeaderToolbar = () => {
     }
   };
 
-  const handleWarmUpToggle = () => {
-    if (isWarmUpMode) {
-      console.log('Going back to main game');
-      navigate('/');
-    } else {
-      console.log('Going to warm up mode');
-      navigate('/warm-up');
+  const handleLeaderboardClick = () => {
+    console.log('Leaderboard button clicked');
+    try {
+      navigate('/leaderboard');
+    } catch (error) {
+      console.error('Error navigating to leaderboard:', error);
     }
   };
+
   const handleHelpClick = (e) => {
-    e.stopPropagation();  // Prevent event bubbling
+    e.stopPropagation();
     console.log('Help button clicked, current state:', isDropdownOpen);
     setIsDropdownOpen(!isDropdownOpen);
   };
@@ -58,10 +56,6 @@ const HeaderToolbar = () => {
     }
   };
 
-  React.useEffect(() => {
-    console.log('HeaderToolbar mounted, navigate function available:', !!navigate);
-  }, [navigate]);
-
   return (
     <div className="header-toolbar">
       <div className="button-row">
@@ -79,25 +73,25 @@ const HeaderToolbar = () => {
         </button>
         <button 
           className="toolbar-button"
-          onClick={handleWarmUpToggle}
-          title={isWarmUpMode ? "Back to Main Game" : "Warm Up"}
-          data-testid="warmup-button"
+          onClick={handleLeaderboardClick}
+          title="Leaderboard"
+          data-testid="leaderboard-button"
         >
           <img 
-            src={isWarmUpMode ? '/assets/images/ui/blue-goback.svg' : '/assets/images/ui/blue-warmup.svg'}
-            alt={isWarmUpMode ? "Back to Main Game" : "Warm Up"} 
+            src="/assets/images/ui/leaderboard.svg"
+            alt="Leaderboard" 
             className="button-img" 
           />
         </button>
         <button 
-  className="toolbar-button relative"  // Added 'relative' here
-  onClick={handleHelpClick}
-  ref={helpButtonRef}
-  title="Help"
-  data-testid="help-button"
-  aria-expanded={isDropdownOpen}
-  aria-haspopup="true"
->
+          className="toolbar-button relative"
+          onClick={handleHelpClick}
+          ref={helpButtonRef}
+          title="Help"
+          data-testid="help-button"
+          aria-expanded={isDropdownOpen}
+          aria-haspopup="true"
+        >
           <img 
             src="/assets/images/ui/blue-question.svg"
             alt="Help" 

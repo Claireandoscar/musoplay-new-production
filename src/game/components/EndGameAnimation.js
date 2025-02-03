@@ -142,46 +142,46 @@ const EndGameAnimation = ({ score, barHearts }) => {
         </div>
 
         {showShare && (
-          <div className="share-section">
-            <div className="share-buttons">
-              <button 
-                onClick={() => handleShare('facebook')} 
-                className="main-game-share-button"
-                style={{ borderColor: '#1174B9' }}
-              >
-                <Facebook style={{ stroke: '#1174B9' }} />
-              </button>
-              <button 
-                onClick={() => handleShare('instagram')} 
-                className="main-game-share-button"
-                style={{ borderColor: '#1174B9' }}
-              >
-                <Instagram style={{ stroke: '#1174B9' }} />
-              </button>
-              <button 
-                onClick={() => handleShare('whatsapp')} 
-                className="main-game-share-button"
-                style={{ borderColor: '#1174B9' }}
-              >
-                <MessageCircle style={{ stroke: '#1174B9' }} />
-              </button>
-              <button 
-                onClick={() => handleShare('linkedin')} 
-                className="main-game-share-button"
-                style={{ borderColor: '#1174B9' }}
-              >
-                <Linkedin style={{ stroke: '#1174B9' }} />
-              </button>
-            </div>
-            <button 
-              onClick={handleNativeShare}
-              className="main-game-share-text-button"
-              style={{ 
-                borderColor: '#1174B9',
-                color: '#1174B9'
-              }}
-            >
-              PLEASE SHARE!
+  <div className="main-game-share-section">  
+    <div className="main-game-share-buttons">  
+      <button 
+        onClick={() => handleShare('facebook')} 
+        className="main-game-share-button"  // This one is correct
+        style={{ borderColor: '#1174B9' }}
+      >
+        <Facebook style={{ stroke: '#1174B9' }} />
+      </button>
+      <button 
+        onClick={() => handleShare('instagram')} 
+        className="main-game-share-button"
+        style={{ borderColor: '#1174B9' }}
+      >
+        <Instagram style={{ stroke: '#1174B9' }} />
+      </button>
+      <button 
+        onClick={() => handleShare('whatsapp')} 
+        className="main-game-share-button"
+        style={{ borderColor: '#1174B9' }}
+      >
+        <MessageCircle style={{ stroke: '#1174B9' }} />
+      </button>
+      <button 
+        onClick={() => handleShare('linkedin')} 
+        className="main-game-share-button"
+        style={{ borderColor: '#1174B9' }}
+      >
+        <Linkedin style={{ stroke: '#1174B9' }} />
+      </button>
+    </div>
+    <button 
+      onClick={handleNativeShare}
+      className="main-game-share-text-button"
+      style={{ 
+        borderColor: '#1174B9',
+        color: '#1174B9'
+      }}
+    >
+      PLEASE SHARE!
             </button>
           </div>
         )}
