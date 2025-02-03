@@ -78,7 +78,7 @@ const HeaderToolbar = () => {
           data-testid="leaderboard-button"
         >
           <img 
-            src="/assets/images/ui/leaderboard.svg"
+            src="/assets/images/ui/LeaderBoard.svg"
             alt="Leaderboard" 
             className="button-img" 
           />
