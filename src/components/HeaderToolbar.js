@@ -3,18 +3,21 @@ import './HeaderToolbar.css';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../services/AuthContext';
 import DropDown from './DropDown'; 
+import RefreshPopup from './RefreshPopup';
 
-const HeaderToolbar = () => {
+const HeaderToolbar = ({ onRefresh, refreshesLeft, isAnimating }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const isWarmUpMode = location.pathname === '/warm-up';
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [showNoRefreshesMessage, setShowNoRefreshesMessage] = useState(false);
+  const [showRefreshConfirm, setShowRefreshConfirm] = useState(false);
+  const [showInitialPopup, setShowInitialPopup] = useState(false);
   const dropdownRef = useRef(null);
   const helpButtonRef = useRef(null);
   useAuth();
 
   const handleStatsClick = () => {
-    console.log('Stats button clicked');
     try {
       navigate('/stats');
     } catch (error) {
@@ -23,7 +26,6 @@ const HeaderToolbar = () => {
   };
 
   const handleLeaderboardClick = () => {
-    console.log('Leaderboard button clicked');
     try {
       navigate('/leaderboard');
     } catch (error) {
@@ -33,12 +35,10 @@ const HeaderToolbar = () => {
 
   const handleHelpClick = (e) => {
     e.stopPropagation();
-    console.log('Help button clicked, current state:', isDropdownOpen);
     setIsDropdownOpen(!isDropdownOpen);
   };
 
   const handleSubscribeClick = () => {
-    console.log('Subscribe button clicked');
     try {
       navigate('/signup');
     } catch (error) {
@@ -48,11 +48,32 @@ const HeaderToolbar = () => {
 
   const handleRefreshClick = () => {
     if (isWarmUpMode) {
-      console.log('Going back to main game');
-      navigate('/');
+      // Call onRefresh directly for warm-up mode
+      if (onRefresh) {
+        onRefresh();
+      }
+      return;
+    }
+  
+    // Main game refresh logic
+    if (refreshesLeft === 0) {
+      setShowNoRefreshesMessage(true);
+      setTimeout(() => setShowNoRefreshesMessage(false), 3000);
+      return;
+    }
+    
+    if (refreshesLeft === 3) {
+      setShowInitialPopup(true);
     } else {
-      console.log('Refresh button clicked');
-      // Original refresh logic will go here later
+      setShowRefreshConfirm(true);
+    }
+  };
+
+  const handleConfirmedRefresh = () => {
+    if (onRefresh && refreshesLeft > 0) {
+      onRefresh();
+      setShowInitialPopup(false);
+      setShowRefreshConfirm(false);
     }
   };
 
@@ -111,7 +132,7 @@ const HeaderToolbar = () => {
           />
         </button>
         <button 
-          className="toolbar-button"
+          className={`toolbar-button relative ${isAnimating ? 'animate-pulse' : ''}`}
           onClick={handleRefreshClick}
           title="Refresh"
           data-testid="refresh-button"
@@ -123,7 +144,7 @@ const HeaderToolbar = () => {
           />
         </button>
       </div>
-      <div className="logo-wrapper">
+      <div className="logo-wrapper z-[1]">
         <img src="/assets/images/ui/logo.svg" alt="Musoplay Logo" className="logo" />
       </div>
 
@@ -134,6 +155,30 @@ const HeaderToolbar = () => {
         dropdownRef={dropdownRef}
         isWarmUpMode={isWarmUpMode} 
       />
+      
+      {showNoRefreshesMessage && !isWarmUpMode && (
+        <RefreshPopup 
+          refreshesLeft={0}
+          onClose={() => setShowNoRefreshesMessage(false)}
+        />
+      )}
+
+      {showInitialPopup && !isWarmUpMode && (
+        <RefreshPopup 
+          refreshesLeft={3}
+          onConfirm={handleConfirmedRefresh}
+          onClose={() => setShowInitialPopup(false)}
+          isInitialPopup={true}
+        />
+      )}
+
+      {showRefreshConfirm && !isWarmUpMode && (
+        <RefreshPopup 
+          refreshesLeft={refreshesLeft}
+          onConfirm={handleConfirmedRefresh}
+          onClose={() => setShowRefreshConfirm(false)}
+        />
+      )}
     </div>
   );
 };
