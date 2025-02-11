@@ -15,7 +15,7 @@ const HeaderToolbar = ({ onRefresh, refreshesLeft, isAnimating }) => {
   const [showInitialPopup, setShowInitialPopup] = useState(false);
   const dropdownRef = useRef(null);
   const helpButtonRef = useRef(null);
-  useAuth();
+  const { user } = useAuth(); 
 
   const handleStatsClick = () => {
     try {
@@ -38,13 +38,18 @@ const HeaderToolbar = ({ onRefresh, refreshesLeft, isAnimating }) => {
     setIsDropdownOpen(!isDropdownOpen);
   };
 
-  const handleSubscribeClick = () => {
-    try {
-      navigate('/signup');
-    } catch (error) {
-      console.error('Error navigating to signup:', error);
+  // In HeaderToolbar.js
+const handleSubscribeClick = () => {
+  try {
+    if (user) {
+      navigate('/profile'); // If user is authenticated, go to profile
+    } else {
+      navigate('/signup');  // If no user, go to signup
     }
-  };
+  } catch (error) {
+    console.error('Error navigating:', error);
+  }
+};
 
   const handleRefreshClick = () => {
     if (isWarmUpMode) {

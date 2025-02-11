@@ -10,6 +10,7 @@ import { GameProvider } from './context/GameContext';
 import { WarmUpProvider } from './context/warmup-context';
 import { RefreshProvider } from './game/context/refresh/RefreshContext';
 import { WarmUpRefreshProvider } from './warm_up_game/context/WarmUpRefreshContext';
+import ProfilePage from './pages/ProfilePage';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -52,6 +53,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <StatsAndStreaks />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/profile" 
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
               </ProtectedRoute>
             } 
           />

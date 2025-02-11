@@ -1,14 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase';
+import { useAuth } from '../services/AuthContext';
 
 const SignUpPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Auth handlers remain the same
+  useEffect(() => {
+    if (user) {
+      navigate('/profile'); // Change this from '/' to '/profile'
+    }
+  }, [user, navigate]);
+
   const handleEmailSignUp = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -29,20 +36,6 @@ const SignUpPage = () => {
   const handleGoogleSignUp = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google'
-    });
-    if (error) alert(error.message);
-  };
-
-  const handleAppleSignUp = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'apple'
-    });
-    if (error) alert(error.message);
-  };
-
-  const handleFacebookSignUp = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'facebook'
     });
     if (error) alert(error.message);
   };
@@ -85,18 +78,6 @@ const SignUpPage = () => {
                 className="w-full p-3 border-2 border-writing/30 rounded-lg font-patrick hover:bg-writing/5 transition-colors"
               >
                 CONTINUE WITH GOOGLE
-              </button>
-              <button 
-                onClick={handleAppleSignUp}
-                className="w-full p-3 border-2 border-writing/30 rounded-lg font-patrick hover:bg-writing/5 transition-colors"
-              >
-                CONTINUE WITH APPLE
-              </button>
-              <button 
-                onClick={handleFacebookSignUp}
-                className="w-full p-3 border-2 border-writing/30 rounded-lg font-patrick hover:bg-writing/5 transition-colors"
-              >
-                CONTINUE WITH FACEBOOK
               </button>
               
               <div className="flex flex-col sm:flex-row gap-4">
@@ -142,10 +123,6 @@ const SignUpPage = () => {
               <div className="flex items-center gap-3">
                 <img src="/assets/images/ui/archive.svg" alt="" className="w-6 h-6" />
                 <span className="font-patrick">PLAY ALL HISTORIC GAMES</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <img src="/assets/images/ui/terms.svg" alt="" className="w-6 h-6" />
-                <span className="font-patrick">LEARN A NEW MUSICAL TERM DAILY</span>
               </div>
               <div className="flex items-center gap-3">
                 <img src="/assets/images/ui/subscribebullet.svg" alt="" className="w-6 h-6" />
