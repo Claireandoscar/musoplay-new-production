@@ -9,28 +9,63 @@ const ProfilePage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [stats, setStats] = useState(null);
+  const [todayPerformance, setTodayPerformance] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchUserStats = async () => {
+    const fetchUserData = async () => {
       try {
-        const { data, error } = await supabase
+        if (!user?.id) return;
+
+        // Get today's date at midnight UTC
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // Fetch general stats
+        const { data: statsData, error: statsError } = await supabase
           .from('user_stats')
           .select('*')
-          .eq('id', user?.id)
+          .eq('id', user.id)
           .single();
-        if (error) throw error;
-        setStats(data);
+
+        if (statsError) throw statsError;
+
+        // Fetch today's game score
+        const { data: scoreData, error: scoreError } = await supabase
+          .from('game_scores')
+          .select('*')
+          .eq('user_id', user.id)
+          .gte('played_at', today.toISOString())
+          .order('played_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (scoreError && scoreError.code !== 'PGRST116') { // Ignore "no rows returned" error
+          throw scoreError;
+        }
+
+        // Ensure score data has the correct structure
+        const formattedScoreData = scoreData ? {
+          ...scoreData,
+          total_score: scoreData.total_score || 0,
+          bar_scores: scoreData.bar_scores || [4, 4, 4, 4]
+        } : null;
+
+        setStats(statsData || {
+          current_streak: 0,
+          best_streak: 0,
+          total_perfect_scores: 0,
+          total_games_played: 0
+        });
+        setTodayPerformance(formattedScoreData);
       } catch (error) {
-        console.error('Error fetching stats:', error);
+        console.error('Error fetching user data:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (user) {
-      fetchUserStats();
-    }
+    fetchUserData();
   }, [user]);
 
   const handleShare = (platform) => {
@@ -51,6 +86,21 @@ const ProfilePage = () => {
         window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}&summary=${encodeURIComponent(shareText)}`);
         break;
       default:
+        if (navigator.share) {
+          try {
+            navigator.share({
+              title: 'MUSOPLAY Score',
+              text: shareText,
+              url: shareUrl
+            });
+          } catch (error) {
+            if (error.name !== 'AbortError') {
+              console.error('Error sharing:', error);
+            }
+          }
+        } else {
+          alert('Use the social buttons above to share your score!');
+        }
         break;
     }
   };
@@ -185,70 +235,80 @@ const ProfilePage = () => {
           <div className="card bg-background-alt shadow-xl border-2 border-writing/30 rounded-lg">
             <div className="card-body p-6">
               <h2 className="text-2xl font-patrick text-writing mb-4">Today's Performance</h2>
-              <div className="mb-8">
-                <p className="text-sm font-patrick text-writing">SCORE</p>
-                <p className="text-4xl font-patrick text-writing">15/16</p>
-              </div>
+              {todayPerformance ? (
+                <>
+                  <div className="mb-8">
+                    <p className="text-sm font-patrick text-writing">SCORE</p>
+                    <p className="text-4xl font-patrick text-writing">
+                      {todayPerformance.total_score}/16
+                    </p>
+                  </div>
 
-              {/* Hearts and Social Buttons Container */}
-              <div className="flex">
-                {/* Hearts Section */}
-                <div className="flex-1">
-                  <p className="text-sm font-patrick text-writing mb-4">BAR PERFORMANCE</p>
-                  <div className="grid grid-rows-4 gap-4">
-                    {[4, 3, 4, 4].map((hearts, index) => (
-                      <div key={index} className="flex">
-                        {[...Array(4)].map((_, i) => (
-                          <img
-                            key={i}
-                            src={`/assets/images/ui/${i < hearts ? 'orangeheart.svg' : 'orangeheart-empty.svg'}`}
-                            alt={i < hearts ? "Full Heart" : "Empty Heart"}
-                            className="w-8 h-8 mr-2"
-                          />
+                  {/* Hearts and Social Buttons Container */}
+                  <div className="flex">
+                    {/* Hearts Section */}
+                    <div className="flex-1">
+                      <p className="text-sm font-patrick text-writing mb-4">BAR PERFORMANCE</p>
+                      <div className="grid grid-rows-4 gap-4">
+                        {(todayPerformance?.bar_scores || [4, 4, 4, 4]).map((hearts, index) => (
+                          <div key={index} className="flex">
+                            {[...Array(4)].map((_, i) => (
+                              <img
+                                key={i}
+                                src={`/assets/images/ui/${i < hearts ? 'orangeheart.svg' : 'orangeheart-empty.svg'}`}
+                                alt={i < hearts ? "Full Heart" : "Empty Heart"}
+                                className="w-8 h-8 mr-2"
+                              />
+                            ))}
+                          </div>
                         ))}
                       </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Social Buttons Section */}
-                <div className="flex-1 flex justify-center">
-                  <div className="w-32 flex flex-col justify-between">
-                    <div className="grid grid-cols-2 gap-4 mt-8">
-                      <button
-                        onClick={() => handleShare('facebook')}
-                        className="w-12 h-12 rounded-lg border-2 border-writing flex items-center justify-center transition-colors hover:bg-gray-50"
-                      >
-                        <Facebook size={24} className="text-writing" />
-                      </button>
-                      <button
-                        onClick={() => handleShare('instagram')}
-                        className="w-12 h-12 rounded-lg border-2 border-writing flex items-center justify-center transition-colors hover:bg-gray-50"
-                      >
-                        <Instagram size={24} className="text-writing" />
-                      </button>
-                      <button
-                        onClick={() => handleShare('whatsapp')}
-                        className="w-12 h-12 rounded-lg border-2 border-writing flex items-center justify-center transition-colors hover:bg-gray-50"
-                      >
-                        <MessageCircle size={24} className="text-writing" />
-                      </button>
-                      <button
-                        onClick={() => handleShare('linkedin')}
-                        className="w-12 h-12 rounded-lg border-2 border-writing flex items-center justify-center transition-colors hover:bg-gray-50"
-                      >
-                        <Linkedin size={24} className="text-writing" />
-                      </button>
                     </div>
-                    <button
-                      onClick={() => handleShare('native')}
-                      className="w-full text-sm font-patrick text-writing border-2 border-writing rounded-lg px-4 py-2 transition-colors hover:bg-gray-50"
-                    >
-                      PLEASE SHARE!
-                    </button>
+
+                    {/* Social Buttons Section */}
+                    <div className="flex-1 flex justify-center">
+                      <div className="w-32 flex flex-col justify-between">
+                        <div className="grid grid-cols-2 gap-4 mt-8">
+                          <button
+                            onClick={() => handleShare('facebook')}
+                            className="w-12 h-12 rounded-lg border-2 border-writing flex items-center justify-center transition-colors hover:bg-gray-50"
+                          >
+                            <Facebook size={24} className="text-writing" />
+                          </button>
+                          <button
+                            onClick={() => handleShare('instagram')}
+                            className="w-12 h-12 rounded-lg border-2 border-writing flex items-center justify-center transition-colors hover:bg-gray-50"
+                          >
+                            <Instagram size={24} className="text-writing" />
+                          </button>
+                          <button
+                            onClick={() => handleShare('whatsapp')}
+                            className="w-12 h-12 rounded-lg border-2 border-writing flex items-center justify-center transition-colors hover:bg-gray-50"
+                          >
+                            <MessageCircle size={24} className="text-writing" />
+                          </button>
+                          <button
+                            onClick={() => handleShare('linkedin')}
+                            className="w-12 h-12 rounded-lg border-2 border-writing flex items-center justify-center transition-colors hover:bg-gray-50"
+                          >
+                            <Linkedin size={24} className="text-writing" />
+                          </button>
+                        </div>
+                        <button
+                          onClick={() => handleShare('native')}
+                          className="w-full text-sm font-patrick text-writing border-2 border-writing rounded-lg px-4 py-2 transition-colors hover:bg-gray-50"
+                        >
+                          PLEASE SHARE!
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
+                </>
+              ) : (
+                <p className="font-patrick text-writing text-center">
+                  No game played today yet!
+                </p>
+              )}
             </div>
           </div>
         </div>
