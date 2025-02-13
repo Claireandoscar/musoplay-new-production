@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import InstructionsPopup from '../pages/InstructionsPopup';
 
-const DropDown = ({ isOpen, onClose, buttonRef, dropdownRef, isWarmUpMode }) => {
+const DropDown = ({ isOpen, onClose, buttonRef, dropdownRef, alignment = 'center', isGameMenu = false }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [showInstructions, setShowInstructions] = useState(false);
 
   useEffect(() => {
@@ -25,33 +26,94 @@ const DropDown = ({ isOpen, onClose, buttonRef, dropdownRef, isWarmUpMode }) => 
     };
   }, [isOpen, onClose, buttonRef, dropdownRef]);
 
-  const handleHowToPlay = () => {
-    onClose();
-    setShowInstructions(true);
-  };
-
   const handleWarmUpToggle = () => {
     onClose();
-    if (isWarmUpMode) {
+    if (location.pathname === '/warm-up') {
       navigate('/');
     } else {
       navigate('/warm-up');
     }
   };
 
-  const menuItems = [
+  const handleHowToPlay = () => {
+    onClose();
+    setShowInstructions(true);
+  };
+
+  // Define base menu items that appear in all menus
+  const baseMenuItems = [
     { 
-      label: 'How to Play', 
-      action: handleHowToPlay
+      label: 'Archive', 
+      action: () => {
+        onClose();
+        console.log('Archive clicked');
+      }
     },
-    {
-      label: isWarmUpMode ? 'Back to Main Game' : 'Warm Up Game',
-      action: handleWarmUpToggle
+    { 
+      label: 'FAQ', 
+      action: () => {
+        onClose();
+        console.log('FAQ clicked');
+      }
     },
-    { label: 'Archive', action: () => console.log('Archive clicked') },
-    { label: 'FAQ', action: () => console.log('FAQ clicked') },
-    { label: 'Privacy & Terms', action: () => console.log('Privacy & Terms clicked') }
+    { 
+      label: 'Privacy & Terms', 
+      action: () => {
+        onClose();
+        console.log('Privacy & Terms clicked');
+      }
+    },
+    { 
+      label: 'Report a Bug', 
+      action: () => {
+        onClose();
+        console.log('Report a Bug clicked');
+      }
+    }
   ];
+
+  // Construct menu items based on context
+  const menuItems = isGameMenu
+    ? [
+        // Game menu (Question mark)
+        { 
+          label: 'How to Play', 
+          action: handleHowToPlay
+        },
+        ...baseMenuItems
+      ]
+    : [
+        // Everything menu
+        {
+          label: location.pathname === '/warm-up' ? 'Back to Main Game' : 'Warm Up Game',
+          action: handleWarmUpToggle
+        },
+        // Show Profile only on Stats page
+        ...(location.pathname === '/stats' ? [{
+          label: 'Profile',
+          action: () => {
+            onClose();
+            navigate('/profile');
+          }
+        }] : []),
+        // Show Stats & Streaks if not on stats page
+        ...(location.pathname !== '/stats' ? [{
+          label: 'Stats & Streaks',
+          action: () => {
+            onClose();
+            navigate('/stats');
+          }
+        }] : []),
+        // Show Leaderboard if not on leaderboard page
+        ...(location.pathname !== '/leaderboard' ? [{
+          label: 'Leaderboard',
+          action: () => {
+            onClose();
+            navigate('/leaderboard');
+          }
+        }] : []),
+        ...baseMenuItems
+      ];
 
   if (!isOpen && !showInstructions) return null;
 
@@ -60,7 +122,13 @@ const DropDown = ({ isOpen, onClose, buttonRef, dropdownRef, isWarmUpMode }) => 
       {isOpen && (
         <div
           ref={dropdownRef}
-          className="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-50"
+          className={`absolute top-full mt-1 z-50 ${
+            alignment === 'center' 
+              ? 'left-1/2 -translate-x-1/2' 
+              : alignment === 'right' 
+                ? 'right-0' 
+                : 'left-0'
+          }`}
         >
           <div 
             className="w-48 bg-background-alt border-2 border-[#1174B9]/30 rounded-lg 
@@ -84,7 +152,7 @@ const DropDown = ({ isOpen, onClose, buttonRef, dropdownRef, isWarmUpMode }) => 
 
       {showInstructions && (
         <InstructionsPopup
-          gameType={isWarmUpMode ? 'warmup' : 'main'}
+          gameType={location.pathname === '/warm-up' ? 'warmup' : 'main'}
           isPreloading={false}
           isAudioLoaded={true}
           onStartGame={() => setShowInstructions(false)}

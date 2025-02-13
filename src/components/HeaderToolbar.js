@@ -153,13 +153,13 @@ const handleSubscribeClick = () => {
         <img src="/assets/images/ui/logo.svg" alt="Musoplay Logo" className="logo" />
       </div>
 
-      <DropDown 
-        isOpen={isDropdownOpen}
-        onClose={() => setIsDropdownOpen(false)}
-        buttonRef={helpButtonRef}
-        dropdownRef={dropdownRef}
-        isWarmUpMode={isWarmUpMode} 
-      />
+      <DropDown
+  isOpen={isDropdownOpen}
+  onClose={() => setIsDropdownOpen(false)}
+  buttonRef={helpButtonRef}
+  dropdownRef={dropdownRef}
+  isGameMenu={true}
+/>
       
       {showNoRefreshesMessage && !isWarmUpMode && (
         <RefreshPopup 
