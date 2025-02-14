@@ -49,13 +49,7 @@ const SiteHeader = () => {
             BACK TO GAME
           </button>
           <div className="flex-1">
-            <button
-              className="w-full font-patrick text-[#1174B9] border-[#1174B9] border-2 
-                       rounded-lg py-2 hover:bg-[#1174B9]/10 transition-colors text-sm"
-              onClick={() => document.querySelector('.everything-button')?.click()}
-            >
-              EVERYTHING
-            </button>
+            <EverythingButton />
           </div>
         </div>
       </div>
