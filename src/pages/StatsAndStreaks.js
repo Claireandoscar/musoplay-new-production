@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../services/AuthContext';
 import { ScoreService } from '../services/scoreService';
 import ScoreHistory from '../components/ScoreHistory';
 import { Facebook, Instagram, Linkedin, MessageCircle } from 'lucide-react';
 import { supabase } from '../services/supabase';
-import EverythingButton from '../components/EverythingButton';
+import SiteHeader from '../components/SiteHeader';
 
 // Utility function to determine heart image based on date
 const getHeartImageForDate = (date, isActive) => {
@@ -20,7 +19,6 @@ const getHeartImageForDate = (date, isActive) => {
 const MemoizedScoreHistory = React.memo(ScoreHistory);
 
 const StatsAndStreaks = () => {
-  const navigate = useNavigate();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -156,21 +154,7 @@ const StatsAndStreaks = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
-      <div className="bg-[#FFFDEE]">
-        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-          <img src="/assets/images/ui/logo.svg" alt="MUSOPLAY" className="h-8" />
-          <div className="flex items-center gap-4">
-            <button 
-              onClick={() => navigate('/')} 
-              className="font-patrick text-[#1174B9] border-[#1174B9] border-2 rounded-lg px-6 py-2 hover:bg-[#1174B9]/10 transition-colors"
-            >
-              BACK TO GAME
-            </button>
-            <EverythingButton />
-          </div>
-        </div>
-      </div>
+      <SiteHeader />
   
       <div className="p-4 max-w-5xl mx-auto w-full">
         {/* Streak Cards */}
