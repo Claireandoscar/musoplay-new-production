@@ -16,9 +16,11 @@ const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
   
   if (loading) {
-    return <div className="min-h-screen bg-[#FFFDEE] flex items-center justify-center">
-      <p>Loading...</p>
-    </div>;
+    return (
+      <div className="min-h-[100dvh] w-full bg-[#FFFDEE] flex items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    );
   }
   
   if (!user) {
@@ -28,54 +30,65 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
+// Layout component that ensures consistent background
+const Layout = ({ children }) => (
+  <div className="min-h-[100dvh] w-full bg-[#FFFDEE] flex flex-col overflow-x-hidden">
+    <div className="flex-1 flex flex-col">
+      {children}
+    </div>
+  </div>
+);
+
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/" element={
-            <GameProvider gameType="main">
-              <RefreshProvider>
-                <GameApp />
-              </RefreshProvider>
-            </GameProvider>
-          } />
-          <Route path="/warm-up" element={
-            <WarmUpProvider>
-              <WarmUpRefreshProvider>
-                <WarmUpGame />
-              </WarmUpRefreshProvider>
-            </WarmUpProvider>
-          } />
-          <Route path="/signup" element={<SignUpPage />} />
-          <Route 
-            path="/stats" 
-            element={
-              <ProtectedRoute>
-                <StatsAndStreaks />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/profile" 
-            element={
-              <ProtectedRoute>
-                <ProfilePage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/leaderboard" 
-            element={
-              <ProtectedRoute>
-                <div className="min-h-screen bg-[#FFFDEE] flex items-center justify-center font-patrick text-[#1174B9]">
-                  <p>Leaderboard Coming Soon</p>
-                </div>
-              </ProtectedRoute>
-            } 
-          />
-        </Routes>
-      </Router>
+      <Layout>
+        <Router>
+          <Routes>
+            <Route path="/" element={
+              <GameProvider gameType="main">
+                <RefreshProvider>
+                  <GameApp />
+                </RefreshProvider>
+              </GameProvider>
+            } />
+            <Route path="/warm-up" element={
+              <WarmUpProvider>
+                <WarmUpRefreshProvider>
+                  <WarmUpGame />
+                </WarmUpRefreshProvider>
+              </WarmUpProvider>
+            } />
+            <Route path="/signup" element={<SignUpPage />} />
+            <Route 
+              path="/stats" 
+              element={
+                <ProtectedRoute>
+                  <StatsAndStreaks />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/profile" 
+              element={
+                <ProtectedRoute>
+                  <ProfilePage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/leaderboard" 
+              element={
+                <ProtectedRoute>
+                  <div className="min-h-[100dvh] w-full flex items-center justify-center font-patrick text-[#1174B9]">
+                    <p>Leaderboard Coming Soon</p>
+                  </div>
+                </ProtectedRoute>
+              } 
+            />
+          </Routes>
+        </Router>
+      </Layout>
     </AuthProvider>
   );
 }

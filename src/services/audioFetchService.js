@@ -126,7 +126,20 @@ export class AudioFetchService {
       return this.fetchFallbackAudio();
     }
   }
-
+  async fetchFallbackAudio() {
+    console.log('Using fallback audio');
+    return {
+        melodyParts: [
+            '/assets/audio/testMelodies/2024-12-15/bar1n1n5n8n3.mp3',
+            '/assets/audio/testMelodies/2024-12-15/bar2n6QLn5QRn4QLn6QRn5n3.mp3',
+            '/assets/audio/testMelodies/2024-12-15/bar3n6QLn5QRn4QLn6QRn5n2.mp3',
+            '/assets/audio/testMelodies/2024-12-15/bar4n3n2QLn3QRn1n1.mp3'
+        ],
+        fullTune: '/assets/audio/testMelodies/2024-12-15/test3tune.mp3',
+        date: this.getLocalDateString(),
+        difficulty: 'medium'
+    };
+}
   async fetchWarmupAudio() {
     try {
       await this.initialize();
@@ -203,15 +216,7 @@ export class AudioFetchService {
     }
   }
 
-  async fetchFallbackAudio() {
-    console.log('Using fallback audio');
-    return {
-      melodyParts: Array(4).fill('/assets/audio/testMelodies/2024-12-15/bar1n1n5n8n3.mp3'),
-      fullTune: '/assets/audio/testMelodies/2024-12-15/test3tune.mp3',
-      date: this.getLocalDateString(),
-      difficulty: 'medium'
-    };
-  }
+  
 
   async fetchWarmupFallbackAudio() {
     console.log('Using warmup fallback audio');

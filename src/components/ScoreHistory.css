@@ -1,0 +1,94 @@
+.score-history-container {
+  width: 100%;
+  overflow: hidden;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1.5px;
+  width: 100%;
+}
+
+.calendar-day {
+  aspect-ratio: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+}
+
+.calendar-hearts {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5px;
+  padding: 1px;
+  height: 85%;
+}
+
+.calendar-hearts-row {
+  display: flex;
+  justify-content: center;
+  gap: 0.5px;
+}
+
+/* Base size */
+.calendar-hearts img {
+  width: 10px !important;
+  height: 10px !important;
+}
+
+/* iPad Mini */
+@media only screen 
+and (min-width: 768px) 
+and (max-width: 991px) {
+  .calendar-hearts img {
+    width: 16px !important;
+    height: 16px !important;
+  }
+}
+
+/* iPad Air */
+@media only screen 
+and (min-width: 992px) 
+and (max-width: 1024px) {
+  .calendar-hearts img {
+    width: 17px !important;
+    height: 17px !important;
+  }
+}
+
+/* iPad Pro - with more specific targeting */
+@media only screen 
+and (min-width: 1024px) 
+and (max-width: 1366px)
+and (orientation: portrait),
+(min-width: 1024px) 
+and (max-width: 1366px)
+and (orientation: landscape) {
+  .calendar-hearts img {
+    width: 13px !important;
+    height: 13px !important;
+    transform: scale(1) !important;
+  }
+  
+  .calendar-hearts {
+    transform: none !important;
+  }
+  
+  .calendar-day {
+    transform: none !important;
+  }
+}
+
+/* Desktop */
+@media only screen 
+and (min-width: 1367px) {
+  .calendar-hearts img {
+    width: 10px !important;
+    height: 10px !important;
+  }
+}

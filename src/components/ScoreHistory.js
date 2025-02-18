@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../services/supabase';
+import './ScoreHistory.css';  // Add this import
 
 const ScoreHistory = ({ userId }) => {
   const [gameHistory, setGameHistory] = useState([]);
@@ -16,19 +17,12 @@ const ScoreHistory = ({ userId }) => {
     return isActive ? 'orangeheart.svg' : 'orangeheart-empty.svg';
   };
 
-  // Helper function to check if a date is today
-
   useEffect(() => {
     const fetchGameHistory = async () => {
       try {
         // Set time to midnight UTC
         const startOfMonth = new Date(Date.UTC(currentMonth.getFullYear(), currentMonth.getMonth(), 1));
         const endOfMonth = new Date(Date.UTC(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0, 23, 59, 59, 999));
-
-        console.log('Fetching scores for range:', {
-          start: startOfMonth.toISOString(),
-          end: endOfMonth.toISOString()
-        });
 
         const { data: scores, error } = await supabase
           .from('game_scores')
@@ -39,8 +33,6 @@ const ScoreHistory = ({ userId }) => {
           .order('played_at', { ascending: false });
 
         if (error) throw error;
-
-        console.log('Fetched scores:', scores);
 
         const latestAttempts = scores?.reduce((acc, game) => {
           const dateKey = new Date(game.played_at).toISOString().split('T')[0];
@@ -90,7 +82,7 @@ const ScoreHistory = ({ userId }) => {
   }
 
   return (
-    <div className="card bg-[#FFFFF5] shadow-xl mb-6 border-2 border-[#1174B9]/30 rounded-lg">
+    <div className="score-history-container card bg-[#FFFFF5] shadow-xl mb-6 border-2 border-[#1174B9]/30 rounded-lg max-w-full">
       <div className="card-body p-6">
         <div className="flex justify-between items-center mb-4">
           <button 
@@ -119,7 +111,7 @@ const ScoreHistory = ({ userId }) => {
           </button>
         </div>
 
-        <div className="grid grid-cols-7 gap-2">
+        <div className="calendar-grid">
           {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
             <div key={`day-${index}`} className="text-center font-['Patrick_Hand_SC'] text-[#1174B9]">
               {day}
@@ -127,13 +119,13 @@ const ScoreHistory = ({ userId }) => {
           ))}
           
           {[...Array(new Date(gameHistory[0]?.date).getDay() || 0)].map((_, i) => (
-            <div key={`empty-${i}`} className="aspect-square border-2 border-[#1174B9]/10 rounded-lg" />
+            <div key={`empty-${i}`} className="calendar-day border-2 border-[#1174B9]/10 rounded-lg" />
           ))}
           
           {gameHistory.map((game) => (
             <div 
               key={game.date}
-              className={`aspect-square border-2 border-[#1174B9]/10 rounded-lg flex flex-col ${
+              className={`calendar-day border-2 border-[#1174B9]/10 rounded-lg ${
                 game.played ? 'bg-[#FFFFF5]' : 'bg-[#FFFDEE]'
               }`}
             >
@@ -141,15 +133,14 @@ const ScoreHistory = ({ userId }) => {
                 {new Date(game.date).getDate()}
               </div>
               {game.played && game.bar_scores && (
-                <div className="w-full flex flex-col justify-center p-1">
+                <div className="calendar-hearts">
                   {game.bar_scores.map((hearts, barIndex) => (
-                    <div key={barIndex} className="flex gap-[2px] justify-center">
+                    <div key={barIndex} className="calendar-hearts-row">
                       {[...Array(4)].map((_, i) => (
                         <img 
                           key={i}
                           src={`/assets/images/ui/${getHeartImage(game.date, i < hearts)}`}
                           alt={i < hearts ? "Full Heart" : "Empty Heart"}
-                          className="w-[10px] h-[10px]"
                         />
                       ))}
                     </div>
