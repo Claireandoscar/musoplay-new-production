@@ -3,16 +3,12 @@ import './HeaderToolbar.css';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../services/AuthContext';
 import DropDown from './DropDown'; 
-import RefreshPopup from './RefreshPopup';
 
-const HeaderToolbar = ({ onRefresh, refreshesLeft, isAnimating }) => {
+const HeaderToolbar = ({ onRefresh }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const isWarmUpMode = location.pathname === '/warm-up';
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [showNoRefreshesMessage, setShowNoRefreshesMessage] = useState(false);
-  const [showRefreshConfirm, setShowRefreshConfirm] = useState(false);
-  const [showInitialPopup, setShowInitialPopup] = useState(false);
   const dropdownRef = useRef(null);
   const helpButtonRef = useRef(null);
   const { user } = useAuth(); 
@@ -38,47 +34,27 @@ const HeaderToolbar = ({ onRefresh, refreshesLeft, isAnimating }) => {
     setIsDropdownOpen(!isDropdownOpen);
   };
 
-  // In HeaderToolbar.js
-const handleSubscribeClick = () => {
-  try {
-    if (user) {
-      navigate('/profile'); // If user is authenticated, go to profile
-    } else {
-      navigate('/signup');  // If no user, go to signup
-    }
-  } catch (error) {
-    console.error('Error navigating:', error);
-  }
-};
-
-  const handleRefreshClick = () => {
-    if (isWarmUpMode) {
-      // Call onRefresh directly for warm-up mode
-      if (onRefresh) {
-        onRefresh();
+  const handleSubscribeClick = () => {
+    try {
+      if (user) {
+        navigate('/profile');
+      } else {
+        navigate('/signup');
       }
-      return;
-    }
-  
-    // Main game refresh logic
-    if (refreshesLeft === 0) {
-      setShowNoRefreshesMessage(true);
-      setTimeout(() => setShowNoRefreshesMessage(false), 3000);
-      return;
-    }
-    
-    if (refreshesLeft === 3) {
-      setShowInitialPopup(true);
-    } else {
-      setShowRefreshConfirm(true);
+    } catch (error) {
+      console.error('Error navigating:', error);
     }
   };
 
-  const handleConfirmedRefresh = () => {
-    if (onRefresh && refreshesLeft > 0) {
+  const handleRefreshClick = () => {
+    if (isWarmUpMode) {
       onRefresh();
-      setShowInitialPopup(false);
-      setShowRefreshConfirm(false);
+      return;
+    }
+  
+    // Just call handleRefreshAction without any conditions
+    if (window.handleRefreshAction) {
+      window.handleRefreshAction();
     }
   };
 
@@ -137,7 +113,7 @@ const handleSubscribeClick = () => {
           />
         </button>
         <button 
-          className={`toolbar-button relative ${isAnimating ? 'animate-pulse' : ''}`}
+          className="toolbar-button relative"
           onClick={handleRefreshClick}
           title="Refresh"
           data-testid="refresh-button"
@@ -154,36 +130,12 @@ const handleSubscribeClick = () => {
       </div>
 
       <DropDown
-  isOpen={isDropdownOpen}
-  onClose={() => setIsDropdownOpen(false)}
-  buttonRef={helpButtonRef}
-  dropdownRef={dropdownRef}
-  isGameMenu={true}
-/>
-      
-      {showNoRefreshesMessage && !isWarmUpMode && (
-        <RefreshPopup 
-          refreshesLeft={0}
-          onClose={() => setShowNoRefreshesMessage(false)}
-        />
-      )}
-
-      {showInitialPopup && !isWarmUpMode && (
-        <RefreshPopup 
-          refreshesLeft={3}
-          onConfirm={handleConfirmedRefresh}
-          onClose={() => setShowInitialPopup(false)}
-          isInitialPopup={true}
-        />
-      )}
-
-      {showRefreshConfirm && !isWarmUpMode && (
-        <RefreshPopup 
-          refreshesLeft={refreshesLeft}
-          onConfirm={handleConfirmedRefresh}
-          onClose={() => setShowRefreshConfirm(false)}
-        />
-      )}
+        isOpen={isDropdownOpen}
+        onClose={() => setIsDropdownOpen(false)}
+        buttonRef={helpButtonRef}
+        dropdownRef={dropdownRef}
+        isGameMenu={true}
+      />
     </div>
   );
 };

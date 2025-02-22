@@ -3,7 +3,7 @@ import { Facebook, Instagram, Linkedin, MessageCircle } from 'lucide-react';
 import HeaderToolbar from '../../components/HeaderToolbar';
 import './EndGameAnimation.css';
 
-const EndGameAnimation = ({ score, barHearts }) => {
+const EndGameAnimation = ({ score, barHearts, refreshesLeft, onRefresh, isAnimating  }) => {
   const [animationStage, setAnimationStage] = useState(0);
   const [showText, setShowText] = useState(false);
   const [showShare, setShowShare] = useState(false);
@@ -13,7 +13,7 @@ const EndGameAnimation = ({ score, barHearts }) => {
   useEffect(() => {
     setIsSunday(new Date().getDay() === 0);
   }, []);
-  
+
   const getScoringPhrase = (score) => {
     if (score === 16) return "Legendary";
     if (score === 15) return "Outstanding";
@@ -104,7 +104,11 @@ const EndGameAnimation = ({ score, barHearts }) => {
   return (
     <div className="end-game-animation">
       <div className={`header-container ${showHeader ? 'visible' : ''}`}>
-        <HeaderToolbar />
+        <HeaderToolbar 
+          refreshesLeft={refreshesLeft}
+          onRefresh={onRefresh}
+          isAnimating={isAnimating}
+        />
       </div>
 
       <div className="animation-content">
@@ -142,46 +146,46 @@ const EndGameAnimation = ({ score, barHearts }) => {
         </div>
 
         {showShare && (
-  <div className="main-game-share-section">  
-    <div className="main-game-share-buttons">  
-      <button 
-        onClick={() => handleShare('facebook')} 
-        className="main-game-share-button"  // This one is correct
-        style={{ borderColor: '#1174B9' }}
-      >
-        <Facebook style={{ stroke: '#1174B9' }} />
-      </button>
-      <button 
-        onClick={() => handleShare('instagram')} 
-        className="main-game-share-button"
-        style={{ borderColor: '#1174B9' }}
-      >
-        <Instagram style={{ stroke: '#1174B9' }} />
-      </button>
-      <button 
-        onClick={() => handleShare('whatsapp')} 
-        className="main-game-share-button"
-        style={{ borderColor: '#1174B9' }}
-      >
-        <MessageCircle style={{ stroke: '#1174B9' }} />
-      </button>
-      <button 
-        onClick={() => handleShare('linkedin')} 
-        className="main-game-share-button"
-        style={{ borderColor: '#1174B9' }}
-      >
-        <Linkedin style={{ stroke: '#1174B9' }} />
-      </button>
-    </div>
-    <button 
-      onClick={handleNativeShare}
-      className="main-game-share-text-button"
-      style={{ 
-        borderColor: '#1174B9',
-        color: '#1174B9'
-      }}
-    >
-      PLEASE SHARE!
+          <div className="main-game-share-section">  
+            <div className="main-game-share-buttons">  
+              <button 
+                onClick={() => handleShare('facebook')} 
+                className="main-game-share-button"
+                style={{ borderColor: '#1174B9' }}
+              >
+                <Facebook style={{ stroke: '#1174B9' }} />
+              </button>
+              <button 
+                onClick={() => handleShare('instagram')} 
+                className="main-game-share-button"
+                style={{ borderColor: '#1174B9' }}
+              >
+                <Instagram style={{ stroke: '#1174B9' }} />
+              </button>
+              <button 
+                onClick={() => handleShare('whatsapp')} 
+                className="main-game-share-button"
+                style={{ borderColor: '#1174B9' }}
+              >
+                <MessageCircle style={{ stroke: '#1174B9' }} />
+              </button>
+              <button 
+                onClick={() => handleShare('linkedin')} 
+                className="main-game-share-button"
+                style={{ borderColor: '#1174B9' }}
+              >
+                <Linkedin style={{ stroke: '#1174B9' }} />
+              </button>
+            </div>
+            <button 
+              onClick={handleNativeShare}
+              className="main-game-share-text-button"
+              style={{ 
+                borderColor: '#1174B9',
+                color: '#1174B9'
+              }}
+            >
+              PLEASE SHARE!
             </button>
           </div>
         )}

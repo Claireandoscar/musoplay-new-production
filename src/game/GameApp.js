@@ -13,7 +13,7 @@ import { ScoreService } from '../services/scoreService';
 import { audioFetchService } from '../services/audioFetchService';
 import InstructionsPopup from '../pages/InstructionsPopup';
 import { useGame } from '../context/GameContext';
-import { useRefresh } from './context/refresh/RefreshContext';
+import MainGameRefresh from './components/MainGameRefresh';
 
 
 
@@ -131,8 +131,6 @@ function GameApp() {
   const [fullTuneMelodyAudio, setFullTuneMelodyAudio] = useState(null);
   const [isAudioLoaded, setIsAudioLoaded] = useState(false);
   // Game state and progress
-  const { refreshesLeft, handleRefresh } = useRefresh();
-  const [isRefreshAnimating, setIsRefreshAnimating] = useState(false);
   const [gameMode, setGameMode] = useState('initial');
   const [score, setScore] = useState(0);
   const [currentBarIndex, setCurrentBarIndex] = useState(0);
@@ -621,35 +619,31 @@ const moveToNextBar = useCallback((isSuccess = true) => {
 ]);
 // eslint-disable-next-line no-unused-vars
 const handleGameReset = () => {
-  if (handleRefresh()) {
-    // Just pause and reset position
-    if (melodyAudio) {
-      melodyAudio.pause();
-      melodyAudio.currentTime = 0;
-    }
-    if (fullTuneMelodyAudio) {
-      fullTuneMelodyAudio.pause();
-      fullTuneMelodyAudio.currentTime = 0;
-    }
-    // Reset game state but keep audio files
-    setScore(0);
-    setCurrentBarIndex(0);
-    dispatch({ type: 'RESET_GAME_STATE' });
-    setIsGameComplete(false);
-    setShowEndAnimation(false);
-    setIsGameEnded(false);
-    setGameMode('initial');
-    dispatch({ type: 'SET_GAME_PHASE', payload: 'initial' });
-    dispatch({ type: 'UPDATE_NOTE_INDEX', payload: 0 });
-    dispatch({ type: 'RESET_BAR_HEARTS' });
-    dispatch({ type: 'RESET_COMPLETED_BARS' });
-    setIsListenPracticeMode(false);
+  // Just pause and reset position
+  if (melodyAudio) {
+    melodyAudio.pause();
+    melodyAudio.currentTime = 0;
   }
+  if (fullTuneMelodyAudio) {
+    fullTuneMelodyAudio.pause();
+    fullTuneMelodyAudio.currentTime = 0;
+  }
+  // Reset game state but keep audio files
+  setScore(0);
+  setCurrentBarIndex(0);
+  dispatch({ type: 'RESET_GAME_STATE' });
+  setIsGameComplete(false);
+  setShowEndAnimation(false);
+  setIsGameEnded(false);
+  setGameMode('initial');
+  dispatch({ type: 'SET_GAME_PHASE', payload: 'initial' });
+  dispatch({ type: 'UPDATE_NOTE_INDEX', payload: 0 });
+  dispatch({ type: 'RESET_BAR_HEARTS' });
+  dispatch({ type: 'RESET_COMPLETED_BARS' });
+  setIsListenPracticeMode(false);
 };
 const handleNotePlay = useCallback(async (noteNumber) => {
   console.log('handleNotePlay called with note:', noteNumber);
-
-  console.log('handleNotePlay called with note:', noteNumber);  
 
   // Get first note of current sequence for hint check
   const currentSequence = correctSequence[currentBarIndex];
@@ -721,12 +715,6 @@ const handleNotePlay = useCallback(async (noteNumber) => {
         dispatch({ type: 'UPDATE_NOTE_INDEX', payload: 0 });
         dispatch({ type: 'WRONG_NOTE', barIndex: currentBarIndex });
       
-        // Add animation check here
-        if (gameState.barHearts[currentBarIndex] <= 2) {
-          setIsRefreshAnimating(true);
-          setTimeout(() => setIsRefreshAnimating(false), 3000);
-        }
-      
         if (gameState.barHearts[currentBarIndex] <= 1) {
           dispatch({ 
             type: 'SET_BAR_FAILED', 
@@ -758,14 +746,12 @@ const handleNotePlay = useCallback(async (noteNumber) => {
       }
     }
   }
-}, [gameState, correctSequence, currentBarIndex, dispatch, moveToNextBar, setScore, setShowFirstNoteHint, setIsRefreshAnimating]);
+}, [gameState, correctSequence, currentBarIndex, dispatch, moveToNextBar, setScore, setShowFirstNoteHint]);
 return (
   <div className="game-wrapper main-game-instance"> 
     <div className={`game-container ${gameMode}`}>
     <HeaderToolbar 
   onRefresh={handleGameReset}
-  refreshesLeft={refreshesLeft}
-  isAnimating={isRefreshAnimating}
 />
       <GameBoard 
         barHearts={gameState.barHearts}
@@ -803,22 +789,23 @@ return (
       <ProgressBar 
         completedBars={gameState.completedBars.filter(Boolean).length} 
       />
-      {showEndAnimation && (
-        <EndGameAnimation 
-          score={score}
-          barHearts={gameState.barHearts}
-        />
-      )}
+    {showEndAnimation && (
+  <EndGameAnimation 
+    score={score}
+    barHearts={gameState.barHearts}
+  />
+)}
     </div>
+    <MainGameRefresh onRefresh={handleGameReset} />
     <InstructionsPopup
-  gameType="main"
-  isPreloading={isPreloading}
-  isAudioLoaded={isAudioLoaded}
-  onStartGame={handleStartGame}
-  show={showInstructions}
-  showCountdown={true}  // Add only this new prop
-/>
-</div>
+      gameType="main"
+      isPreloading={isPreloading}
+      isAudioLoaded={isAudioLoaded}
+      onStartGame={handleStartGame}
+      show={showInstructions}
+      showCountdown={true}
+    />
+  </div>
 );
 }
 
