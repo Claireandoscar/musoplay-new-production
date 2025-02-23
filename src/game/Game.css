@@ -21,6 +21,8 @@ body {
   justify-content: center;
   align-items: center;
   padding: 20px 0;
+  overflow-x: hidden; /* Add this */
+  position: relative; /* Add this */
 }
 
 .game-container {
@@ -28,8 +30,10 @@ body {
   height: 844px;
   position: relative;
   transform-origin: top center;
-  transform-style: preserve-3d;  /* Add this */
-  perspective: 1000px;          /* Add this */
+  transform-style: preserve-3d;
+  perspective: 1000px;
+  margin: 0 auto; /* Add this */
+  max-width: 100%; /* Add this */
 }
 
 .visually-hidden {
@@ -217,9 +221,17 @@ body {
 
 /* Media queries for responsiveness */
 @media (max-width: 389px) {
+  .game-wrapper {
+    padding: 20px 0;
+    width: 100vw;
+    overflow-x: hidden;
+  }
+  
   .game-container {
     transform: scale(0.9);
     transform-origin: top center;
+    width: 100%;
+    max-width: 390px;
   }
 }
 
