@@ -10,6 +10,7 @@ import { GameProvider } from './context/GameContext';
 import { WarmUpProvider } from './context/warmup-context';
 import { WarmUpRefreshProvider } from './warm_up_game/context/WarmUpRefreshContext';
 import ProfilePage from './pages/ProfilePage';
+import PlayAgainPage from './pages/PlayAgainPage.js';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -81,6 +82,10 @@ function App() {
                     </div>
                   </ProtectedRoute>
                 } 
+              />
+              <Route 
+                path="/play-again" 
+                element={<PlayAgainPage />} 
               />
             </Routes>
         </Router>

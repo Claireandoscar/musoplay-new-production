@@ -6,6 +6,7 @@ const DropDown = ({ isOpen, onClose, buttonRef, dropdownRef, alignment = 'center
   const navigate = useNavigate();
   const location = useLocation();
   const [showInstructions, setShowInstructions] = useState(false);
+  const isWarmUpMode = location.pathname === '/warm-up';
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -28,7 +29,7 @@ const DropDown = ({ isOpen, onClose, buttonRef, dropdownRef, alignment = 'center
 
   const handleWarmUpToggle = () => {
     onClose();
-    if (location.pathname === '/warm-up') {
+    if (isWarmUpMode) {
       navigate('/');
     } else {
       navigate('/warm-up');
@@ -40,15 +41,13 @@ const DropDown = ({ isOpen, onClose, buttonRef, dropdownRef, alignment = 'center
     setShowInstructions(true);
   };
 
+  const handlePlayAgain = () => {
+    onClose();
+    navigate('/play-again');
+  };
+
   // Define base menu items that appear in all menus
   const baseMenuItems = [
-    { 
-      label: 'Archive', 
-      action: () => {
-        onClose();
-        console.log('Archive clicked');
-      }
-    },
     { 
       label: 'FAQ', 
       action: () => {
@@ -57,14 +56,14 @@ const DropDown = ({ isOpen, onClose, buttonRef, dropdownRef, alignment = 'center
       }
     },
     { 
-      label: 'Privacy & Terms', 
+      label: 'PRIVACY & TERMS', 
       action: () => {
         onClose();
         console.log('Privacy & Terms clicked');
       }
     },
     { 
-      label: 'Report a Bug', 
+      label: 'REPORT A BUG', 
       action: () => {
         onClose();
         console.log('Report a Bug clicked');
@@ -77,20 +76,28 @@ const DropDown = ({ isOpen, onClose, buttonRef, dropdownRef, alignment = 'center
     ? [
         // Game menu (Question mark)
         { 
-          label: 'How to Play', 
+          label: 'HOW TO PLAY', 
           action: handleHowToPlay
+        },
+        {
+          label: isWarmUpMode ? 'MAIN GAME' : 'WARM UP GAME',
+          action: handleWarmUpToggle
+        },
+        {
+          label: 'PLAY AGAIN',
+          action: handlePlayAgain
         },
         ...baseMenuItems
       ]
     : [
         // Everything menu
         {
-          label: location.pathname === '/warm-up' ? 'Back to Main Game' : 'Warm Up Game',
+          label: isWarmUpMode ? 'BACK TO MAIN GAME' : 'WARM UP GAME',
           action: handleWarmUpToggle
         },
         // Show Profile only on Stats page
-        ...(location.pathname === '/stats' ? [{
-          label: 'Profile',
+        ...(location.pathname !== '/profile' ? [{
+          label: 'YOUR PAGE',
           action: () => {
             onClose();
             navigate('/profile');
@@ -98,7 +105,7 @@ const DropDown = ({ isOpen, onClose, buttonRef, dropdownRef, alignment = 'center
         }] : []),
         // Show Stats & Streaks if not on stats page
         ...(location.pathname !== '/stats' ? [{
-          label: 'Stats & Streaks',
+          label: 'STATS & STREAKS',
           action: () => {
             onClose();
             navigate('/stats');
@@ -106,12 +113,17 @@ const DropDown = ({ isOpen, onClose, buttonRef, dropdownRef, alignment = 'center
         }] : []),
         // Show Leaderboard if not on leaderboard page
         ...(location.pathname !== '/leaderboard' ? [{
-          label: 'Leaderboard',
+          label: 'LEADERBOARD',
           action: () => {
             onClose();
             navigate('/leaderboard');
           }
         }] : []),
+        // Add Play Again to Everything menu
+        {
+          label: 'PLAY AGAIN',
+          action: handlePlayAgain
+        },
         ...baseMenuItems
       ];
 
@@ -152,7 +164,7 @@ const DropDown = ({ isOpen, onClose, buttonRef, dropdownRef, alignment = 'center
 
       {showInstructions && (
         <InstructionsPopup
-          gameType={location.pathname === '/warm-up' ? 'warmup' : 'main'}
+          gameType={isWarmUpMode ? 'warmup' : 'main'}
           isPreloading={false}
           isAudioLoaded={true}
           onStartGame={() => setShowInstructions(false)}
