@@ -157,6 +157,26 @@ const StatsAndStreaks = () => {
       <SiteHeader />
   
       <div className="p-4 max-w-5xl mx-auto w-full">
+        {/* Welcome Card */}
+        <div className="card bg-background-alt shadow-xl border-2 border-writing/30 rounded-lg mb-6">
+          <div className="card-body p-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="font-patrick text-[#AB08FF]">
+                  <span className="text-lg font-normal">WELCOME TO</span><br />
+                  <span className="text-2xl font-bold">STATS AND STREAKS</span>
+                </h1>
+                <p className="font-patrick text-[#AB08FF] mt-1 text-sm font-normal">
+                  TRACK YOUR PROGRESS AND CELEBRATE YOUR DAILY ACHIEVEMENTS
+                </p>
+              </div>
+              <div className="flex-shrink-0">
+                <img src="/assets/images/ui/purple-stats.svg" alt="Stats" className="w-16 h-16" />
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Streak Cards */}
         <div className="grid grid-cols-2 gap-4 mb-6">
           <div className="card bg-background-alt shadow-xl border-2 border-writing/30 rounded-lg">
