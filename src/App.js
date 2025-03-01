@@ -11,6 +11,8 @@ import { WarmUpProvider } from './context/warmup-context';
 import { WarmUpRefreshProvider } from './warm_up_game/context/WarmUpRefreshContext';
 import ProfilePage from './pages/ProfilePage';
 import PlayAgainPage from './pages/PlayAgainPage.js';
+// Import the HistoricalGame component
+import HistoricalGame from './historical_game/HistoricalGame';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -55,6 +57,12 @@ function App() {
                     <WarmUpGame />
                   </WarmUpRefreshProvider>
                 </WarmUpProvider>
+              } />
+              {/* Add the historical game route */}
+              <Route path="/play-historical" element={
+                <GameProvider gameType="main">
+                  <HistoricalGame />
+                </GameProvider>
               } />
               <Route path="/signup" element={<SignUpPage />} />
               <Route 

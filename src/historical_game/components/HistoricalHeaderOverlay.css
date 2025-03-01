@@ -1,0 +1,13 @@
+/* src/historical_game/components/HistoricalHeaderOverlay.css */
+.historical-text-overlay {
+  font-family: 'patrick-hand-sc', cursive;
+  color: #1174B9;
+  text-align: center;
+  position: absolute;
+  width: 100%;
+  top: 190px;
+  left: 0;
+  font-size: 18px;
+  pointer-events: none;
+  z-index: 10;
+}

@@ -70,7 +70,7 @@ const InstructionsPopup = ({
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-30">
+    <div className="fixed inset-0 flex items-center justify-center z-50">
       <div className="bg-background-alt shadow-xl border-2 border-writing/30 rounded-lg
            md:w-[450px] w-[85%] md:h-[85vh] h-[75vh]
            md:max-h-[800px] max-h-[650px] md:min-h-[600px] min-h-[500px]

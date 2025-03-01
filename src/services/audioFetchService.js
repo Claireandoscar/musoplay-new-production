@@ -126,6 +126,109 @@ export class AudioFetchService {
       return this.fetchFallbackAudio();
     }
   }
+
+  // NEW FUNCTION: Add this fetchHistoricalMelody function
+  async fetchHistoricalMelody(date) {
+    try {
+      await this.initialize();
+      
+      // Extract date parts exactly like the main function
+      const year = date.getFullYear();
+      const month = date.getMonth();
+      const paddedMonth = String(month + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const dayOfWeek = date.getDay();
+      const difficulty = dayOfWeek === 0 ? 'difficult' : 'medium';
+      const monthName = this.monthNames[month];
+      const formatted = `${year}_${paddedMonth}_${day}`;
+      
+      // Log the details to debug
+      console.log('Historical date details:', {
+        dateObject: date,
+        dateString: date.toISOString(),
+        year,
+        month,
+        paddedMonth,
+        day,
+        dayOfWeek,
+        difficulty,
+        monthName,
+        formatted
+      });
+      
+      // Use the EXACT same path format as fetchSupabaseAudio
+      const melodyPath = `${year}/${monthName}/${year}_${paddedMonth}_${day}_${difficulty}`;
+      
+      console.log('Attempting to fetch from historical path:', melodyPath);
+      
+      const { data: melodyFiles, error: melodyError } = await supabase.storage
+        .from('musoplay_melodies')
+        .list(melodyPath);
+
+      // Log more debug info
+      console.log('Supabase response:', { 
+        hasFiles: melodyFiles && melodyFiles.length > 0,
+        fileCount: melodyFiles?.length || 0,
+        error: melodyError
+      });
+
+      if (melodyError) {
+        console.error('Failed to list historical melody folder:', melodyError);
+        return this.fetchFallbackAudio();
+      }
+
+      if (!melodyFiles || melodyFiles.length === 0) {
+        console.error('No files found in historical melody folder');
+        return this.fetchFallbackAudio();
+      }
+
+      // The rest is unchanged
+      const barFiles = melodyFiles
+        .filter(f => f.name.startsWith('bar') && f.name.endsWith('.mp3'))
+        .sort((a, b) => {
+          const aNum = parseInt(a.name.match(/bar(\d)/)?.[1] || '0');
+          const bNum = parseInt(b.name.match(/bar(\d)/)?.[1] || '0');
+          return aNum - bNum;
+        });
+
+      const tuneFile = melodyFiles.find(f => f.name.match(/^[a-z]+\d{2}tune\.mp3$/));
+
+      console.log('Files analysis:', {
+        barFiles: barFiles.map(f => f.name),
+        tuneFile: tuneFile?.name
+      });
+
+      if (barFiles.length !== 4 || !tuneFile) {
+        console.error('Missing required historical audio files');
+        return this.fetchFallbackAudio();
+      }
+
+      const melodyParts = await Promise.all(
+        barFiles.map(async file => {
+          const { data } = await supabase.storage
+            .from('musoplay_melodies')
+            .getPublicUrl(`${melodyPath}/${file.name}`);
+          return data.publicUrl;
+        })
+      );
+
+      const { data: tuneData } = await supabase.storage
+        .from('musoplay_melodies')
+        .getPublicUrl(`${melodyPath}/${tuneFile.name}`);
+
+      return {
+        melodyParts,
+        fullTune: tuneData.publicUrl,
+        date: formatted,
+        difficulty,
+        isHistorical: true
+      };
+    } catch (error) {
+      console.error('Historical melody fetch failed:', error);
+      return this.fetchFallbackAudio();
+    }
+  }
+
   async fetchFallbackAudio() {
     console.log('Using fallback audio');
     return {
@@ -139,84 +242,7 @@ export class AudioFetchService {
         date: this.getLocalDateString(),
         difficulty: 'medium'
     };
-}
-  async fetchWarmupAudio() {
-    try {
-      await this.initialize();
-      
-      const { year, month, formatted } = this.getWeeklyDateParts();
-      const warmupPath = `${year}/${month}/warmup_easy_${formatted}`;
-      
-      console.log('DEBUG - Weekly parts:', { year, month, formatted });
-      console.log('DEBUG - Attempting to fetch from:', warmupPath);
-      
-      const { data: warmupFiles, error: warmupError } = await supabase.storage
-        .from('musoplay_melodies')
-        .list(warmupPath);
-
-      if (warmupError) {
-        console.error('Failed to list warm-up folder:', warmupError);
-        const fallback = await this.fetchWarmupFallbackAudio();
-        console.log('Using warm-up fallback:', fallback);
-        return fallback;
-      }
-
-      if (!warmupFiles || warmupFiles.length === 0) {
-        console.error('No files found in warm-up folder');
-        const fallback = await this.fetchWarmupFallbackAudio();
-        console.log('Using warm-up fallback due to no files:', fallback);
-        return fallback;
-      }
-
-      // Find and sort bar files
-      const barFiles = warmupFiles
-        .filter(f => f.name.startsWith('bar') && f.name.endsWith('.mp3'))
-        .sort((a, b) => {
-          const aNum = parseInt(a.name.match(/bar(\d)/)?.[1] || '0');
-          const bNum = parseInt(b.name.match(/bar(\d)/)?.[1] || '0');
-          return aNum - bNum;
-        });
-
-      // Find tune file
-      const tuneFile = warmupFiles.find(f => f.name.includes('tune.mp3'));
-
-      if (barFiles.length !== 4 || !tuneFile) {
-        console.error('Missing required audio files');
-        const fallback = await this.fetchWarmupFallbackAudio();
-        console.log('Using warm-up fallback due to missing files:', fallback);
-        return fallback;
-      }
-
-      // Get public URLs for all files
-      const melodyParts = await Promise.all(
-        barFiles.map(async file => {
-          const { data } = await supabase.storage
-            .from('musoplay_melodies')
-            .getPublicUrl(`${warmupPath}/${file.name}`);
-          return data.publicUrl;
-        })
-      );
-
-      const { data: tuneData } = await supabase.storage
-        .from('musoplay_melodies')
-        .getPublicUrl(`${warmupPath}/${tuneFile.name}`);
-
-      return {
-        melodyParts,
-        fullTune: tuneData.publicUrl,
-        date: formatted,
-        isWeekly: true,
-        difficulty: 'easy'
-      };
-    } catch (error) {
-      console.error('Weekly warm-up fetch failed:', error);
-      const fallback = await this.fetchWarmupFallbackAudio();
-      console.log('Using warm-up fallback due to error:', fallback);
-      return fallback;
-    }
   }
-
-  
 
   async fetchWarmupFallbackAudio() {
     console.log('Using warmup fallback audio');

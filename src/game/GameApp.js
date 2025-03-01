@@ -14,6 +14,7 @@ import { audioFetchService } from '../services/audioFetchService';
 import InstructionsPopup from '../pages/InstructionsPopup';
 import { useGame } from '../context/GameContext';
 import MainGameRefresh from './components/MainGameRefresh';
+import { useNavigate } from 'react-router-dom';
 
 
 
@@ -117,6 +118,7 @@ function gameReducer(state, action) {
 }
 
 function GameApp() {
+  const navigate = useNavigate();
   console.log('Main Game Mounted:', window.location.pathname);
   const { user } = useAuth();
   console.log('Current authenticated user:', user); 
@@ -253,17 +255,36 @@ const loadInitialAudio = useCallback(async (barIndex, audioPath) => {
 useEffect(() => {
   const fetchAndInitAudio = async () => {
     try {
+      // First check if user has already played today
+      if (user?.id) {
+        const today = new Date();
+        today.setUTCHours(0, 0, 0, 0);
+        
+        const { data, error } = await supabase
+          .from('game_scores')
+          .select('*')
+          .eq('user_id', user.id)
+          .gte('played_at', today.toISOString())
+          .limit(1);
+        
+        if (!error && data && data.length > 0) {
+          console.log('User has already played today, redirecting to profile page');
+          navigate('/profile');
+          return; // Stop initialization if already played
+        }
+      }
+      
       console.log('Starting audio setup...');
       setIsPreloading(true);
-
+      
       // First, initialize the audio engine
       const success = await audioEngine.init();
       console.log('AudioEngine init result:', success);
-
+      
       if (!success) {
         throw new Error('Failed to initialize audio engine');
       }
-
+      
       // Load basic sounds first
       console.log('Loading basic sounds...');
       for (let i = 1; i <= 8; i++) {
@@ -275,7 +296,7 @@ useEffect(() => {
       await audioEngine.loadSound('/assets/audio/ui-sounds/bar-failed.mp3', 'fail');
       await audioEngine.loadSound('/assets/audio/ui-sounds/bar-complete.mp3', 'complete');
       await audioEngine.loadSound('/assets/audio/ui-sounds/note-flip.mp3', 'flip');
-
+      
       // Fetch melody files
       try {
         const melodyData = await audioFetchService.fetchSupabaseAudio();
@@ -302,7 +323,7 @@ useEffect(() => {
           await loadInitialAudio(0, fallbackData.melodyParts[0]);
         }
       }
-
+      
       setIsAudioLoaded(true);
       dispatch({ type: 'SET_GAME_PHASE', payload: 'ready' });
       console.log('Audio setup complete');
@@ -313,10 +334,9 @@ useEffect(() => {
       setIsPreloading(false);
     }
   };
-
+  
   fetchAndInitAudio();
-}, [loadInitialAudio, dispatch]);
-
+}, [loadInitialAudio, dispatch, user, navigate]);
 // Keep the bar loading effect separate
 useEffect(() => {
   if (correctSequence.length > 0 && currentBarIndex > 0) { // Only load subsequent bars

@@ -1,9 +1,82 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import EverythingButton from './EverythingButton';
+import { supabase } from '../services/supabase';
+import { useAuth } from '../services/AuthContext';
 
 const SiteHeader = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useAuth();
+  const [hasPlayedToday, setHasPlayedToday] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Check if we're on the Play Again page
+  const isPlayAgainPage = location.pathname === '/play-again';
+
+  // Check if the user has played today
+  useEffect(() => {
+    const checkIfUserPlayedToday = async () => {
+      if (!user?.id) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // Get today's date at midnight UTC
+        const today = new Date();
+        today.setUTCHours(0, 0, 0, 0);
+        
+        // Query for any game scores from today
+        const { data, error } = await supabase
+          .from('game_scores')
+          .select('*')
+          .eq('user_id', user.id)
+          .gte('played_at', today.toISOString())
+          .limit(1);
+        
+        if (error) {
+          console.error('Error checking play status:', error);
+          setHasPlayedToday(false);
+        } else {
+          // If data exists and has at least one entry, user has already played today
+          setHasPlayedToday(data && data.length > 0);
+        }
+      } catch (error) {
+        console.error('Exception checking play status:', error);
+        setHasPlayedToday(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkIfUserPlayedToday();
+  }, [user?.id]);
+
+  const handleGameButtonClick = () => {
+    // If on Play Again page and played today, go to profile
+    if (isPlayAgainPage && hasPlayedToday) {
+      navigate('/profile');
+    } 
+    // If played today but not on Play Again page, go to Play Again
+    else if (hasPlayedToday) {
+      navigate('/play-again');
+    } 
+    // If not played today, go to main game
+    else {
+      navigate('/');
+    }
+  };
+
+  // Determine button text based on current page and play status
+  let buttonText;
+  if (isPlayAgainPage && hasPlayedToday) {
+    buttonText = "YOUR PAGE";
+  } else if (hasPlayedToday) {
+    buttonText = "PLAY AGAIN";
+  } else {
+    buttonText = "BACK TO GAME";
+  }
 
   return (
     <div className="w-full bg-[#FFFDEE]">
@@ -17,11 +90,12 @@ const SiteHeader = () => {
         />
         <div className="flex items-center gap-4">
           <button
-            onClick={() => navigate('/')}
+            onClick={handleGameButtonClick}
             className="font-patrick text-[#1174B9] border-[#1174B9] border-2 rounded-lg 
                      px-6 py-2 hover:bg-[#1174B9]/10 transition-colors"
+            disabled={loading}
           >
-            BACK TO GAME
+            {loading ? "LOADING..." : buttonText}
           </button>
           <EverythingButton isMobile={false} />
         </div>
@@ -43,11 +117,12 @@ const SiteHeader = () => {
           {/* Buttons Row */}
           <div className="flex justify-start gap-2">
             <button
-              onClick={() => navigate('/')}
+              onClick={handleGameButtonClick}
               className="flex-1 font-patrick text-[#1174B9] border-[#1174B9] border-2 
                        rounded-lg py-2 hover:bg-[#1174B9]/10 transition-colors text-sm"
+              disabled={loading}
             >
-              BACK TO GAME
+              {loading ? "..." : buttonText}
             </button>
             <div className="flex-1">
               <EverythingButton isMobile={true} />

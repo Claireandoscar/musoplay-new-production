@@ -61,14 +61,13 @@ export const ScoreService = {
     });
 
     return { newCurrentStreak, newBestStreak };
-  },  // Added missing comma here
+  },
 
   async recordGameScore(userId, barScores, melodyId = null) {
     console.log('recordGameScore called with:', { userId, barScores, melodyId });
     
     try {
       const totalScore = barScores.reduce((sum, score) => sum + score, 0);
-      // ... rest of the function
       const perfectBars = barScores.filter(score => score === 4).length;
       const now = new Date();
       const utcNow = now.toISOString();
@@ -155,28 +154,6 @@ export const ScoreService = {
       throw error;
     }
   },
-
-  async getUserScoreHistory(userId, limit = 30) {
-    console.log('Fetching score history for user:', userId);
-    
-    try {
-      const { data, error } = await supabase
-        .from('game_scores')
-        .select('*')
-        .eq('user_id', userId)
-        .order('played_at', { ascending: false })
-        .limit(limit);
-
-      if (error) throw error;
-
-      console.log('Score history fetched:', data);
-      return data;
-    } catch (error) {
-      console.error('Error in getUserScoreHistory:', error);
-      throw error;
-    }
-  },
-
   async getUserStats(userId) {
     console.log('Fetching user stats for:', userId);
     
@@ -188,7 +165,7 @@ export const ScoreService = {
         start: utcStartOfDay.toISOString(),
         end: utcEndOfDay.toISOString()
       });
-
+  
       const { data: todayGames, error: todayError } = await supabase
         .from('game_scores')
         .select('*')
@@ -197,26 +174,34 @@ export const ScoreService = {
         .lte('played_at', utcEndOfDay.toISOString())
         .order('played_at', { ascending: false })
         .limit(1);
-
+  
       if (todayError) throw todayError;
-
+  
       const { data: userData, error: userError } = await supabase
         .from('user_stats')
         .select('current_streak, best_streak, total_games_played, total_perfect_scores')
         .eq('id', userId)
         .single();
-
+  
       if (userError && userError.code !== 'PGRST116') {
         throw userError;
       }
-
+  
+      const todayGame = todayGames?.[0];
+      
+      // Prefer best scores if available
+      const barScores = todayGame?.best_bar_scores || todayGame?.bar_scores || [0, 0, 0, 0];
+      const totalScore = todayGame?.best_score || 
+                       (todayGame?.bar_scores ? todayGame.bar_scores.reduce((sum, score) => sum + score, 0) : 0);
+  
       return {
         currentStreak: userData?.current_streak || 0,
         bestStreak: userData?.best_streak || 0,
-        todayScore: todayGames?.[0]?.total_score || 0,
-        barPerformance: todayGames?.[0]?.bar_scores || [0, 0, 0, 0],
+        todayScore: totalScore,
+        barPerformance: barScores,
         totalGamesPlayed: userData?.total_games_played || 0,
-        totalPerfectScores: userData?.total_perfect_scores || 0
+        totalPerfectScores: userData?.total_perfect_scores || 0,
+        lastPlayedDate: todayGame?.played_at ? new Date(todayGame.played_at) : new Date()
       };
     } catch (error) {
       console.error('Error in getUserStats:', error);
