@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../services/AuthContext';
+import SiteHeader from '../components/SiteHeader';
+import { hasPlayedToday } from '../Utils/gameUtils';
 
 const SignUpPage = () => {
   const navigate = useNavigate();
@@ -9,10 +11,16 @@ const SignUpPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [hasPlayed, setHasPlayed] = useState(false);
+
+  // Check if user has already played today
+  useEffect(() => {
+    setHasPlayed(hasPlayedToday());
+  }, []);
 
   useEffect(() => {
     if (user) {
-      navigate('/profile'); // Change this from '/' to '/profile'
+      navigate('/profile');
     }
   }, [user, navigate]);
 
@@ -42,25 +50,41 @@ const SignUpPage = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Logo */}
-      <div className="p-4 flex justify-center">
-        <img 
-          src="/assets/images/ui/logo.svg" 
-          alt="Musoplay" 
-          className="h-8 object-contain"
-        />
-      </div>
+      {/* Use SiteHeader with navigation based on play status */}
+      <SiteHeader overrideStatus="notPlayed" />  {/* Override to always show "BACK TO GAME" */}
       
       <div className="p-4 max-w-2xl mx-auto w-full">
-        {/* Back Button */}
-        <button 
-          onClick={() => navigate('/')}
-          className="font-patrick text-easy border-easy border-3 rounded-full px-6 py-2 mb-6 hover:bg-easy hover:text-white transition-colors"
-        >
-          BACK TO GAME
-        </button>
+        {/* Welcome Card - Different for players who have already played */}
+        <div className="card bg-background-alt shadow-xl border-2 border-writing/30 rounded-lg mb-6">
+          <div className="card-body p-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="font-patrick text-[#AB08FF]">
+                  <span className="text-lg font-normal">WELCOME TO</span><br />
+                  <span className="text-2xl font-bold">MUSOPLAY</span>
+                </h1>
+                {hasPlayed ? (
+                  <p className="font-patrick text-[#AB08FF] mt-1 text-sm font-normal">
+                    WANT ANOTHER GO? SIGN UP <span className="font-bold">FREE</span> TO REPLAY
+                  </p>
+                ) : (
+                  <p className="font-patrick text-[#AB08FF] mt-1 text-sm font-normal">
+                    CREATE AN ACCOUNT TO ACCESS ALL FEATURES
+                  </p>
+                )}
+              </div>
+              <div className="flex-shrink-0">
+                {hasPlayed ? (
+                  <img src="/assets/images/ui/n7.svg" alt="Note" className="w-16 h-16" />
+                ) : (
+                  <img src="/assets/images/ui/blue-archive.svg" alt="Archive" className="w-16 h-16" />
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
 
-        {/* Main Card */}
+        {/* Sign Up Card */}
         <div className="card bg-background-alt shadow-xl border-2 border-writing/30 rounded-lg mb-6">
           <div className="card-body p-6">
             <div className="flex items-center gap-3 mb-6">
@@ -69,13 +93,13 @@ const SignUpPage = () => {
                 alt="Icon" 
                 className="w-8 h-8"
               />
-              <h2 className="text-2xl font-patrick">CREATE A FREE ACCOUNT</h2>
+              <h2 className="text-2xl font-patrick text-[#1174B9]">CREATE A FREE ACCOUNT</h2>
             </div>
 
             <div className="space-y-4">
               <button 
                 onClick={handleGoogleSignUp}
-                className="w-full p-3 border-2 border-writing/30 rounded-lg font-patrick hover:bg-writing/5 transition-colors"
+                className="w-full p-3 border-2 border-writing/30 rounded-lg font-patrick text-[#1174B9] hover:bg-writing/5 transition-colors"
               >
                 CONTINUE WITH GOOGLE
               </button>
@@ -86,14 +110,14 @@ const SignUpPage = () => {
                   placeholder="Email" 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="flex-1 p-3 border-2 border-writing/30 rounded-lg font-patrick bg-transparent"
+                  className="flex-1 p-3 border-2 border-writing/30 rounded-lg font-patrick bg-transparent text-[#1174B9]"
                 />
                 <input 
                   type="password" 
                   placeholder="Password" 
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="flex-1 p-3 border-2 border-writing/30 rounded-lg font-patrick bg-transparent"
+                  className="flex-1 p-3 border-2 border-writing/30 rounded-lg font-patrick bg-transparent text-[#1174B9]"
                 />
               </div>
 
@@ -114,19 +138,19 @@ const SignUpPage = () => {
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <img src="/assets/images/ui/statsbullet.svg" alt="" className="w-6 h-6" />
-                <span className="font-patrick">TRACK YOUR STATS AND STREAKS</span>
+                <span className="font-patrick text-[#1174B9]">TRACK YOUR STATS AND STREAKS</span>
               </div>
               <div className="flex items-center gap-3">
                 <img src="/assets/images/ui/warmupbullet.svg" alt="" className="w-6 h-6" />
-                <span className="font-patrick">ACCESS WEEKLY WARM-UP GAME</span>
+                <span className="font-patrick text-[#1174B9]">ACCESS WEEKLY WARM-UP GAME</span>
               </div>
               <div className="flex items-center gap-3">
-                <img src="/assets/images/ui/archive.svg" alt="" className="w-6 h-6" />
-                <span className="font-patrick">PLAY ALL HISTORIC GAMES</span>
+                <img src="/assets/images/ui/blue-archive.svg" alt="" className="w-6 h-6" />
+                <span className="font-patrick text-[#1174B9]">PLAY ALL HISTORIC GAMES</span>
               </div>
               <div className="flex items-center gap-3">
                 <img src="/assets/images/ui/subscribebullet.svg" alt="" className="w-6 h-6" />
-                <span className="font-patrick">RECEIVE DAILY GAME STRAIGHT TO YOUR INBOX</span>
+                <span className="font-patrick text-[#1174B9]">RECEIVE DAILY GAME STRAIGHT TO YOUR INBOX</span>
               </div>
             </div>
 
@@ -136,6 +160,11 @@ const SignUpPage = () => {
             >
               PLAY TODAY'S GAME
             </button>
+            
+            {/* In-App Purchases Note */}
+            <p className="text-center text-xs text-[#1174B9]/70 mt-3 font-patrick">
+              * SOME FEATURES MAY REQUIRE IN-APP PURCHASES
+            </p>
           </div>
         </div>
       </div>

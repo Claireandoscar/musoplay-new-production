@@ -288,3 +288,42 @@
   opacity: 1;
   transform: translateY(0);
 }
+
+/* New styles for the navigation buttons */
+.endgame-nav-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 20px;
+  width: 100%;
+}
+
+.endgame-nav-button {
+  background-color: transparent;
+  color: #1174B9;
+  font-family: 'patrick-hand-sc', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  padding: 8px 16px;
+  border: 3px solid #1174B9;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+}
+
+.endgame-nav-button:hover {
+  background-color: #1174B9;
+  color: #FFFDEE;
+}
+
+@media (max-width: 400px) {
+  .endgame-nav-buttons {
+    gap: 10px;
+  }
+  
+  .endgame-nav-button {
+    font-size: 14px;
+    padding: 6px 12px;
+  }
+}

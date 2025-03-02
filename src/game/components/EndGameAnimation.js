@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Facebook, Instagram, Linkedin, MessageCircle } from 'lucide-react';
-import HeaderToolbar from '../../components/HeaderToolbar';
+import { useNavigate } from 'react-router-dom';
 import './EndGameAnimation.css';
 
 const EndGameAnimation = ({ score, barHearts, refreshesLeft, onRefresh, isAnimating  }) => {
+  const navigate = useNavigate();
   const [animationStage, setAnimationStage] = useState(0);
   const [showText, setShowText] = useState(false);
   const [showShare, setShowShare] = useState(false);
@@ -101,14 +102,33 @@ const EndGameAnimation = ({ score, barHearts, refreshesLeft, onRefresh, isAnimat
     }
   };
 
+  // New navigation handlers
+  const handlePlayAgain = () => {
+    navigate('/play-again');
+  };
+
+  const handleLeaderboard = () => {
+    navigate('/leaderboard');
+  };
+
   return (
     <div className="end-game-animation">
+      {/* Replace HeaderToolbar with new navigation buttons */}
       <div className={`header-container ${showHeader ? 'visible' : ''}`}>
-        <HeaderToolbar 
-          refreshesLeft={refreshesLeft}
-          onRefresh={onRefresh}
-          isAnimating={isAnimating}
-        />
+        <div className="endgame-nav-buttons">
+          <button 
+            className="endgame-nav-button"
+            onClick={handlePlayAgain}
+          >
+            PLAY AGAIN
+          </button>
+          <button 
+            className="endgame-nav-button"
+            onClick={handleLeaderboard}
+          >
+            LEADERBOARD
+          </button>
+        </div>
       </div>
 
       <div className="animation-content">

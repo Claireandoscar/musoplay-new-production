@@ -8,7 +8,7 @@ import SiteHeader from '../components/SiteHeader';
 
 const PlayAgainPage = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [selectedDate, setSelectedDate] = useState(null);
   const [showOptions, setShowOptions] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -16,7 +16,18 @@ const PlayAgainPage = () => {
   const [isPlayedDay, setIsPlayedDay] = useState(true);
   const [gameHistory, setGameHistory] = useState({});
 
+  // Redirect non-authenticated users after auth state is confirmed
   useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/signup');
+    }
+  }, [user, authLoading, navigate]);
+
+  // Check for calendar refresh flag and fetch game history
+  useEffect(() => {
+    // Don't run this if still loading auth or no user
+    if (authLoading || !user) return;
+
     // Check for flag when page loads
     if (localStorage.getItem('forceCalendarRefresh') === 'true') {
       console.log('Found refresh flag, will reload calendar');
@@ -54,7 +65,7 @@ const PlayAgainPage = () => {
     };
     
     fetchUserGameHistory();
-  }, [user]);
+  }, [user, authLoading]);
 
   // Handle day selection from calendar
   const handleDaySelect = (date) => {
@@ -121,6 +132,21 @@ const PlayAgainPage = () => {
     setShowOptions(false);
   };
 
+  // Loading state while checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-writing font-patrick">Loading...</p>
+      </div>
+    );
+  }
+
+  // If not authenticated, don't render anything (the redirect will happen)
+  if (!user) {
+    return null;
+  }
+
+  // Main component render
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Use the SiteHeader component */}
@@ -141,7 +167,7 @@ const PlayAgainPage = () => {
                 </p>
               </div>
               <div className="flex-shrink-0">
-                <img src="/assets/images/ui/archive.svg" alt="Archive" className="w-16 h-16" />
+                <img src="/assets/images/ui/blue-archive.svg" alt="Archive" className="w-16 h-16" />
               </div>
             </div>
           </div>

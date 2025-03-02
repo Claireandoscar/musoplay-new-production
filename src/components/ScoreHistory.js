@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../services/supabase';
-import './ScoreHistory.css';  // Keep the CSS import
+import './ScoreHistory.css'; // Keep the CSS import
 
 const ScoreHistory = ({ userId, onDaySelect }) => {
   const [gameHistory, setGameHistory] = useState([]);
@@ -21,67 +21,89 @@ const ScoreHistory = ({ userId, onDaySelect }) => {
     const fetchGameHistory = async () => {
       try {
         console.log('Fetching game history for user:', userId);
+        
         // Set time to midnight UTC
         const startOfMonth = new Date(Date.UTC(currentMonth.getFullYear(), currentMonth.getMonth(), 1));
         const endOfMonth = new Date(Date.UTC(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0, 23, 59, 59, 999));
-    
-        // Fetch both original plays and replays in one query
+        
+        console.log('Date range:', {
+          start: startOfMonth.toISOString(),
+          end: endOfMonth.toISOString(),
+          currentMonth: currentMonth.toISOString()
+        });
+        
+        // Use a simple query to get all scores for the user
         const { data: scores, error } = await supabase
           .from('game_scores')
           .select('*')
           .eq('user_id', userId)
-          .or(`played_at.gte.${startOfMonth.toISOString()},original_date.gte.${startOfMonth.toISOString()}`)
-          .or(`played_at.lte.${endOfMonth.toISOString()},original_date.lte.${endOfMonth.toISOString()}`)
           .order('played_at', { ascending: false });
-    
+          
         if (error) throw error;
-    
-        // Process each score and group by date
-        const latestAttempts = {};
         
-        // Process each score
-        scores?.forEach(game => {
-          // Determine which date to use as the key
-          const dateKey = game.is_replay 
-            ? new Date(game.original_date).toISOString().split('T')[0]  // For replays, use original_date
-            : new Date(game.played_at).toISOString().split('T')[0];     // For regular plays, use played_at
-          
-          // Calculate score from bar_scores
-          const calculatedScore = Array.isArray(game.bar_scores) 
-            ? game.bar_scores.reduce((sum, hearts) => sum + hearts, 0)
-            : 0;
-          
-          // If we don't have this date yet, or this score is better, use it
-          if (!latestAttempts[dateKey] || calculatedScore > latestAttempts[dateKey].calculatedScore) {
-            latestAttempts[dateKey] = {
-              ...game,
-              calculatedScore,
-              displayBarScores: game.bar_scores
-            };
-          }
-        });
-    
-        // Fill calendar days - update this section to track month properly
+        console.log('All scores fetched:', scores?.length || 0);
+
+        // Initialize array for all days in the month
+        const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
         const filledHistory = [];
         
-        // Iterate through each day of the month
-        for (let day = 1; day <= endOfMonth.getDate(); day++) {
-          const currentDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
-          const dateStr = currentDate.toISOString().split('T')[0];
-          const gameForDay = latestAttempts[dateStr];
+        for (let day = 1; day <= daysInMonth; day++) {
+          const dateObj = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+          const dateStr = dateObj.toISOString().split('T')[0];
+          
+          // Find scores for this date
+          const scoresForDay = scores?.filter(game => {
+            let gameDate;
+            if (game.is_replay && game.original_date) {
+              // For replays, use the original date
+              gameDate = new Date(game.original_date);
+            } else {
+              // For original plays, use played_at
+              gameDate = new Date(game.played_at);
+            }
+            
+            // Convert to ISO date string and compare just the date part
+            const gameDateStr = gameDate.toISOString().split('T')[0];
+            return gameDateStr === dateStr;
+          });
+          
+          if (dateStr === '2025-03-02') {
+            console.log(`Scores for March 2:`, scoresForDay);
+          }
+          
+          // Get best score for this day
+          let bestScore = null;
     
+          
+          if (scoresForDay && scoresForDay.length > 0) {
+            // Find the score with the highest total
+            bestScore = scoresForDay.reduce((best, game) => {
+              const gameScore = game.total_score || 
+                (Array.isArray(game.bar_scores) ? game.bar_scores.reduce((sum, hearts) => sum + hearts, 0) : 0);
+              
+              return gameScore > best.score ? { 
+                score: gameScore, 
+                barScores: game.bar_scores 
+              } : best;
+            }, { score: 0, barScores: [] });
+          }
+          
+          // Add day to history
           filledHistory.push({
             date: dateStr,
-            score: gameForDay?.calculatedScore || null,
-            bar_scores: gameForDay?.displayBarScores || [],
-            played: !!gameForDay,
-            month: currentMonth.getMonth(), // Store month info for rendering
-            year: currentMonth.getFullYear() // Store year info for rendering
+            score: bestScore ? bestScore.score : null,
+            bar_scores: bestScore ? bestScore.barScores : [],
+            played: !!bestScore,
+            month: currentMonth.getMonth(),
+            year: currentMonth.getFullYear()
           });
         }
-    
+        
+        // Log final history size
+        console.log(`Final filled history:`, filledHistory);
+        console.log(`Games marked as played:`, filledHistory.filter(game => game.played).length);
+        
         setGameHistory(filledHistory);
-        console.log('Game history updated with', filledHistory.filter(game => game.played).length, 'played days');
       } catch (error) {
         console.error('Error fetching game history:', error);
       } finally {
@@ -106,12 +128,8 @@ const ScoreHistory = ({ userId, onDaySelect }) => {
     checkForRefresh();
     window.addEventListener('focus', checkForRefresh);
     
-    // Regular interval refresh
-    const interval = setInterval(fetchGameHistory, 10000);
-    
     // Cleanup
     return () => {
-      clearInterval(interval);
       window.removeEventListener('focus', checkForRefresh);
     };
   }, [userId, currentMonth]);
@@ -143,7 +161,7 @@ const ScoreHistory = ({ userId, onDaySelect }) => {
   // Create today variable for comparison
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-
+  
   // Calculate first day of the month and its day of the week (0-6, where 0 is Sunday)
   const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
   const firstDayWeekday = firstDayOfMonth.getDay();
@@ -152,7 +170,7 @@ const ScoreHistory = ({ userId, onDaySelect }) => {
     <div className="score-history-container card bg-[#FFFFF5] shadow-xl mb-6 border-2 border-[#1174B9]/30 rounded-lg max-w-full">
       <div className="card-body p-6">
         <div className="flex justify-between items-center mb-4">
-          <button 
+          <button
             onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
             className="font-['Patrick_Hand_SC'] text-[#1174B9] hover:text-[#0d5a94] px-4"
           >
@@ -161,7 +179,7 @@ const ScoreHistory = ({ userId, onDaySelect }) => {
           <h3 className="font-['Patrick_Hand_SC'] text-xl text-[#1174B9]">
             {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' }).toUpperCase()}
           </h3>
-          <button 
+          <button
             onClick={() => {
               const nextMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1);
               if (nextMonth <= new Date()) {
@@ -177,7 +195,7 @@ const ScoreHistory = ({ userId, onDaySelect }) => {
             →
           </button>
         </div>
-
+        
         <div className="calendar-grid">
           {/* Day headings */}
           {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
@@ -188,9 +206,9 @@ const ScoreHistory = ({ userId, onDaySelect }) => {
           
           {/* Empty days at start of month - with unique keys */}
           {[...Array(firstDayWeekday)].map((_, i) => (
-            <div 
-              key={`empty-start-${currentMonth.getMonth()}-${currentMonth.getFullYear()}-${i}`} 
-              className="calendar-day border-2 border-[#1174B9]/10 rounded-lg" 
+            <div
+              key={`empty-start-${currentMonth.getMonth()}-${currentMonth.getFullYear()}-${i}`}
+              className="calendar-day border-2 border-[#1174B9]/10 rounded-lg"
             />
           ))}
           
@@ -198,14 +216,14 @@ const ScoreHistory = ({ userId, onDaySelect }) => {
           {gameHistory.map((game) => {
             const gameDate = new Date(game.date);
             return (
-              <div 
+              <div
                 key={`day-${gameDate.getMonth()}-${gameDate.getFullYear()}-${gameDate.getDate()}`}
                 onClick={() => handleDayClick(game)}
                 className={`calendar-day border-2 ${
-                  onDaySelect 
+                  onDaySelect
                     ? (game.played || new Date(game.date) < today)
                       ? 'border-[#1174B9]/30 hover:border-[#1174B9] cursor-pointer transition-colors'
-                      : 'border-[#1174B9]/10' 
+                      : 'border-[#1174B9]/10'
                     : 'border-[#1174B9]/10'
                 } rounded-lg ${
                   game.played ? 'bg-[#FFFFF5]' : 'bg-[#FFFDEE]'
@@ -219,7 +237,7 @@ const ScoreHistory = ({ userId, onDaySelect }) => {
                     {game.bar_scores.map((hearts, barIndex) => (
                       <div key={`hearts-row-${gameDate.getDate()}-${barIndex}`} className="calendar-hearts-row">
                         {[...Array(4)].map((_, i) => (
-                          <img 
+                          <img
                             key={`heart-${gameDate.getDate()}-${barIndex}-${i}`}
                             src={`/assets/images/ui/${getHeartImage(game.date, i < hearts)}`}
                             alt={i < hearts ? "Full Heart" : "Empty Heart"}
@@ -233,7 +251,7 @@ const ScoreHistory = ({ userId, onDaySelect }) => {
             );
           })}
         </div>
-
+        
         {onDaySelect && (
           <p className="mt-4 font-patrick text-sm text-writing">
             * Replaying past games does not affect your streak or leaderboard position.

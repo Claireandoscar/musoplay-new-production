@@ -15,6 +15,7 @@ import InstructionsPopup from '../pages/InstructionsPopup';
 import { useGame } from '../context/GameContext';
 import MainGameRefresh from './components/MainGameRefresh';
 import { useNavigate } from 'react-router-dom';
+import { hasPlayedToday, clearGameCompletionData } from '../Utils/gameUtils';
 
 
 
@@ -121,9 +122,37 @@ function GameApp() {
   const navigate = useNavigate();
   console.log('Main Game Mounted:', window.location.pathname);
   const { user } = useAuth();
-  console.log('Current authenticated user:', user); 
+  console.log('Current authenticated user:', user);
   const [gameState, dispatch] = useReducer(gameReducer, initialGameState);
   
+  // Check if user has already played today
+  useEffect(() => {
+    if (hasPlayedToday()) {
+      console.log('User has already played today');
+      
+      // Redirect based on authentication status
+      if (user) {
+        navigate('/profile');
+      } else {
+        navigate('/signup', {
+          state: {
+            message: "You've already played today! Sign up to access more features."
+          }
+        });
+      }
+    } else {
+      console.log('User has not played today, proceeding with game setup');
+      
+      // Check if we need to clear stale data (from previous days)
+      const gameCompletedDate = localStorage.getItem('gameCompletedDate');
+      const today = new Date().toISOString().split('T')[0];
+      
+      if (gameCompletedDate && gameCompletedDate !== today) {
+        console.log('Clearing stale game completion data');
+        clearGameCompletionData();
+      }
+    }
+  }, [navigate, user]);
 
   // Audio-related states
   const [isPreloading, setIsPreloading] = useState(true);
@@ -507,32 +536,41 @@ const moveToNextBar = useCallback((isSuccess = true) => {
     melodyAudio.pause();
     melodyAudio.currentTime = 0;
   }
-  
   const handleGameEnd = async () => {
-    console.log('handleGameEnd triggered', { 
+    console.log('handleGameEnd triggered', {
       score,
       barHearts: gameState.barHearts,
-      user: user?.id 
+      user: user?.id
     });
-    
     console.log('Game ending with score:', score);
+    
+    // Record game completion in localStorage
+    const today = new Date().toISOString().split('T')[0];
+    localStorage.setItem('gameCompletedToday', 'true');
+    localStorage.setItem('gameCompletedDate', today);
+    localStorage.setItem('lastGameScore', score.toString());
+    localStorage.setItem('lastGameHearts', JSON.stringify(gameState.barHearts));
+    
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       console.log('Auth check:', { user, authError });
-  
+      
       if (user) {
-        // Record in game_scores table (removed existingScore check)
+        // Record in game_scores table
         await ScoreService.recordGameScore(user.id, gameState.barHearts);
-  
+        
+        // Set the flag to force calendar refresh - THIS IS THE KEY ADDITION
+        localStorage.setItem('forceCalendarRefresh', 'true');
+        
         // First try to get current stats
         let { data: currentStats, error: fetchError } = await supabase
           .from('user_stats')
           .select('*')
           .eq('id', user.id)
           .single();
-  
+        
         console.log('Current stats:', { currentStats, fetchError });
-  
+        
         if (!currentStats) {
           // Insert initial stats
           const { data: insertData, error: insertError } = await supabase
@@ -546,7 +584,7 @@ const moveToNextBar = useCallback((isSuccess = true) => {
               last_played_at: new Date().toISOString()
             })
             .select();
-  
+            
           console.log('Insert result:', { insertData, insertError });
         } else {
           // Update existing stats
@@ -559,14 +597,14 @@ const moveToNextBar = useCallback((isSuccess = true) => {
             })
             .eq('id', user.id)
             .select();
-  
+            
           console.log('Update result:', { updateData, updateError });
         }
       }
     } catch (error) {
       console.error('Detailed error in handleGameEnd:', error);
     }
-  
+    
     // Continue with game end animation regardless of score recording
     setIsGameComplete(true);
     setIsGameEnded(true);
@@ -578,16 +616,16 @@ const moveToNextBar = useCallback((isSuccess = true) => {
       completed: true
     });
     dispatch({ type: 'SET_GAME_PHASE', payload: 'ended' });
-  
-    await new Promise(resolve => setTimeout(resolve, 2000));
     
+    await new Promise(resolve => setTimeout(resolve, 2000));
     setShowEndAnimation(true);
+    
     if (fullTuneMelodyAudio) {
       fullTuneMelodyAudio.currentTime = 0;
       fullTuneMelodyAudio.play().catch(error => console.error("Audio playback failed:", error));
     }
   };
-  const handleNextBar = async () => {
+   const handleNextBar = async () => {
     dispatch({
       type: 'UPDATE_COMPLETED_BARS',
       barIndex: currentBarIndex,

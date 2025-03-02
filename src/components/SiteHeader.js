@@ -3,8 +3,9 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import EverythingButton from './EverythingButton';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../services/AuthContext';
+import { hasPlayedToday as checkIfPlayedToday } from '../Utils/gameUtils'; // Rename import
 
-const SiteHeader = () => {
+const SiteHeader = ({ overrideStatus }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
@@ -14,11 +15,26 @@ const SiteHeader = () => {
   // Check if we're on the Play Again or Stats page
   const isPlayAgainPage = location.pathname === '/play-again';
   const isStatsPage = location.pathname === '/stats';
+  const isSignUpPage = location.pathname === '/signup';
 
   // Check if the user has played today
   useEffect(() => {
     const checkIfUserPlayedToday = async () => {
+      // If override is provided, use that instead
+      if (overrideStatus === 'played') {
+        setHasPlayedToday(true);
+        setLoading(false);
+        return;
+      } else if (overrideStatus === 'notPlayed') {
+        setHasPlayedToday(false);
+        setLoading(false);
+        return;
+      }
+
+      // For non-signed-up users, check localStorage
       if (!user?.id) {
+        const playedToday = checkIfPlayedToday(); // Use renamed import
+        setHasPlayedToday(playedToday);
         setLoading(false);
         return;
       }
@@ -52,11 +68,17 @@ const SiteHeader = () => {
     };
 
     checkIfUserPlayedToday();
-  }, [user?.id]);
+  }, [user?.id, overrideStatus,]); // Add checkIfPlayedToday to dependencies
+
+  // Rest of the component remains the same...
 
   const handleGameButtonClick = () => {
+    // If on Sign Up page and has played, go to Play Again
+    if (isSignUpPage && hasPlayedToday) {
+      navigate('/play-again');
+    }
     // If on Play Again page, go to stats page
-    if (isPlayAgainPage) {
+    else if (isPlayAgainPage) {
       navigate('/stats');
     }
     // If on Stats page, go to profile page
@@ -75,7 +97,9 @@ const SiteHeader = () => {
 
   // Determine button text based on current page and play status
   let buttonText;
-  if (isPlayAgainPage) {
+  if (isSignUpPage && hasPlayedToday) {
+    buttonText = "PLAY AGAIN";
+  } else if (isPlayAgainPage) {
     buttonText = "STATS & STREAKS";
   } else if (isStatsPage) {
     buttonText = "YOUR PAGE";
@@ -140,6 +164,11 @@ const SiteHeader = () => {
       </div>
     </div>
   );
+};
+
+// Set default props
+SiteHeader.defaultProps = {
+  overrideStatus: null
 };
 
 export default SiteHeader;

@@ -1,4 +1,3 @@
-/* HeaderToolbar.css */
 .header-toolbar {
   position: absolute;
   top: 0;
@@ -38,17 +37,33 @@
   object-fit: contain;
 }
 
+/* Special styling for the How to Play button */
+.how-to-play-button {
+  width: 170px;
+  padding: 0 15px;
+  background-color: transparent;
+  border: 3px solid #1174B9;
+  border-radius: 10px;
+  color: #1174B9;
+  font-family: 'patrick-hand-sc', cursive;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+}
+
 .logo-wrapper {
   margin-top: 65px;
   width: 200px;
-  display: flex;          /* Added flex display */
-  justify-content: center; /* Center horizontally */
-  align-items: center;    /* Center vertically */
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .logo {
   width: 100%;
   height: auto;
-  display: block;         /* Make logo a block element */
-  margin: 0 auto;        /* Center the logo itself */
+  display: block;
+  margin: 0 auto;
 }
