@@ -167,13 +167,14 @@ export const ScoreService = {
       });
   
       const { data: todayGames, error: todayError } = await supabase
-        .from('game_scores')
-        .select('*')
-        .eq('user_id', userId)
-        .gte('played_at', utcStartOfDay.toISOString())
-        .lte('played_at', utcEndOfDay.toISOString())
-        .order('played_at', { ascending: false })
-        .limit(1);
+      .from('game_scores')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('is_replay', false) // Only get original plays, not replays
+      .gte('played_at', utcStartOfDay.toISOString())
+      .lte('played_at', utcEndOfDay.toISOString())
+      .order('played_at', { ascending: true }) // CHANGED: Get earliest score first
+      .limit(1);
   
       if (todayError) throw todayError;
   

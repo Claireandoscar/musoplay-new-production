@@ -32,15 +32,16 @@ const ProfilePage = () => {
 
         if (statsError) throw statsError;
 
-        // Fetch today's game score
-        const { data: scoreData, error: scoreError } = await supabase
-          .from('game_scores')
-          .select('*')
-          .eq('user_id', user.id)
-          .gte('played_at', today.toISOString())
-          .order('played_at', { ascending: false })
-          .limit(1)
-          .single();
+       // Fetch today's game score
+const { data: scoreData, error: scoreError } = await supabase
+.from('game_scores')
+.select('*')
+.eq('user_id', user.id)
+.eq('is_replay', false) // Add this line - only get original plays
+.gte('played_at', today.toISOString())
+.order('played_at', { ascending: true }) // Change to ascending to get first score
+.limit(1)
+.single();
 
         if (scoreError && scoreError.code !== 'PGRST116') { // Ignore "no rows returned" error
           throw scoreError;
