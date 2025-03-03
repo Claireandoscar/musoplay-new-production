@@ -13,7 +13,7 @@ const OwnedMelodies = ({ userId }) => {
         setLoading(false);
         return;
       }
-
+  
       try {
         console.log('Fetching owned melodies for user:', userId);
         
@@ -34,12 +34,13 @@ const OwnedMelodies = ({ userId }) => {
           .eq('is_replay', true)
           .eq('replay_mode', 'unlimited')
           .order('replay_date', { ascending: false });
-
+  
         if (replaysError) throw replaysError;
         
         console.log('Found unlimited replays:', unlimitedReplays?.length || 0);
         console.log('Found total scores:', allScores?.length || 0);
-
+        console.log('Raw unlimited replays data:', unlimitedReplays);
+  
         // Find the unique dates for owned melodies
         const ownedDates = new Set();
         unlimitedReplays?.forEach(replay => {
@@ -129,7 +130,7 @@ const OwnedMelodies = ({ userId }) => {
         // Sort by date (newest first)
         const sortedMelodies = processedMelodies.sort((a, b) => b.lastPlayed - a.lastPlayed);
         
-        console.log('Processed melodies:', sortedMelodies);
+        console.log('Processed melodies for display:', sortedMelodies);
         setOwnedMelodies(sortedMelodies);
       } catch (error) {
         console.error('Error fetching owned melodies:', error);
@@ -137,10 +138,36 @@ const OwnedMelodies = ({ userId }) => {
         setLoading(false);
       }
     };
-
+  
     fetchOwnedMelodies();
+    
+    // Add focus event listener to refresh data when user returns to tab
+    const handleFocus = () => {
+      fetchOwnedMelodies();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    
+    // Check for refresh flag
+    const checkForRefresh = () => {
+      const shouldRefresh = localStorage.getItem('forceCalendarRefresh') === 'true';
+      if (shouldRefresh) {
+        console.log('OwnedMelodies: Force refreshing after collection update');
+        localStorage.removeItem('forceCalendarRefresh');
+        fetchOwnedMelodies();
+      }
+    };
+    
+    // Check immediately and when window gets focus
+    checkForRefresh();
+    window.addEventListener('focus', checkForRefresh);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('focus', checkForRefresh);
+    };
   }, [userId]);
-
   const handleReplay = (date) => {
     const formattedDate = date.toISOString();
     localStorage.setItem('playAgainDate', formattedDate);

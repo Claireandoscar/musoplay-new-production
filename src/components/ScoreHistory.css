@@ -92,3 +92,20 @@ and (min-width: 1367px) {
     height: 10px !important;
   }
 }
+/* Add these styles to your ScoreHistory.css file */
+
+.owned-indicator {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-left: 2px;
+  vertical-align: middle;
+}
+
+.owned-melody {
+  border-color: rgba(171, 8, 255, 0.3) !important; /* Purple border for owned melodies */
+}
+
+.owned-melody:hover {
+  border-color: rgba(171, 8, 255, 0.8) !important;
+}

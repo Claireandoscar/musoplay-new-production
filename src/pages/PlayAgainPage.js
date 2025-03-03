@@ -15,6 +15,9 @@ const PlayAgainPage = () => {
   const [paymentMode] = useState('free'); // Will change to 'paid' in future
   const [isPlayedDay, setIsPlayedDay] = useState(true);
   const [gameHistory, setGameHistory] = useState({});
+  const [ownedMelodies, setOwnedMelodies] = useState(new Set()); // Track owned melodies
+  const [playedOnceMelodies, setPlayedOnceMelodies] = useState(new Set()); // Track played once melodies
+  const [showOnlyUnlimited, setShowOnlyUnlimited] = useState(false); // For controlling options display
 
   // Redirect non-authenticated users after auth state is confirmed
   useEffect(() => {
@@ -34,11 +37,12 @@ const PlayAgainPage = () => {
       localStorage.removeItem('forceCalendarRefresh');
     }
     
-    // Fetch the user's game history to check if days were played
-    const fetchUserGameHistory = async () => {
+    // Fetch the user's game history and replay status
+    const fetchUserData = async () => {
       if (!user?.id) return;
       
       try {
+        // Get played dates
         const { data, error } = await supabase
           .from('game_scores')
           .select('*')
@@ -59,24 +63,86 @@ const PlayAgainPage = () => {
         });
         
         setGameHistory(playedDates);
+
+        // Fetch all replay data for this user
+        const { data: replayData, error: replayError } = await supabase
+          .from('game_scores')
+          .select('original_date, replay_mode')
+          .eq('user_id', user.id)
+          .eq('is_replay', true);
+          
+        if (replayError) throw replayError;
+        
+        // Create sets for owned melodies and single-play used melodies
+        const ownedDatesSet = new Set();
+        const playedOnceDatesSet = new Set();
+        
+        replayData?.forEach(item => {
+          if (item.original_date) {
+            const dateKey = new Date(item.original_date).toISOString().split('T')[0];
+            
+            if (item.replay_mode === 'unlimited') {
+              ownedDatesSet.add(dateKey);
+            } else if (item.replay_mode === 'single') {
+              playedOnceDatesSet.add(dateKey);
+            }
+          }
+        });
+        
+        console.log('Owned melody dates:', Array.from(ownedDatesSet));
+        console.log('Already played once dates:', Array.from(playedOnceDatesSet));
+        
+        setOwnedMelodies(ownedDatesSet);
+        setPlayedOnceMelodies(playedOnceDatesSet);
+        
       } catch (error) {
-        console.error('Error fetching game history:', error);
+        console.error('Error fetching user data:', error);
       }
     };
     
-    fetchUserGameHistory();
+    fetchUserData();
   }, [user, authLoading]);
 
   // Handle day selection from calendar
   const handleDaySelect = (date) => {
+    const dateStr = date.toISOString().split('T')[0];
     setSelectedDate(date);
     
-    // Check if this day has a score record
-    const dateStr = date.toISOString().split('T')[0];
     const wasPlayed = gameHistory[dateStr] || false;
     setIsPlayedDay(wasPlayed);
     
-    setShowOptions(true);
+    // Check melody ownership/play status
+    if (ownedMelodies.has(dateStr)) {
+      // Already owns this melody - go straight to game
+      goToHistoricalGame(date, 'unlimited');
+    } else if (playedOnceMelodies.has(dateStr)) {
+      // Already used "Play Once" - show only unlimited option
+      setShowOnlyUnlimited(true);
+      setShowOptions(true);
+    } else {
+      // Show all options
+      setShowOnlyUnlimited(false);
+      setShowOptions(true);
+    }
+  };
+
+  // Navigate to historical game
+  const goToHistoricalGame = (date, mode) => {
+    setLoading(true);
+    const formattedDate = date.toISOString();
+    const dateKey = date.toISOString().split('T')[0];
+    
+    // Store selection in local storage
+    localStorage.setItem('playAgainDate', formattedDate);
+    localStorage.setItem('playAgainMode', mode);
+    
+    // If unlimited mode is selected, also store it with the date as a key
+    if (mode === 'unlimited') {
+      localStorage.setItem(`playAgainMode_${dateKey}`, 'unlimited');
+    }
+    
+    // Navigate to the historical game
+    navigate(`/play-historical?replay=true&date=${encodeURIComponent(formattedDate)}&mode=${mode}`);
   };
 
   // Placeholder for future payment processing
@@ -97,26 +163,11 @@ const PlayAgainPage = () => {
   const handlePlayOptionSelect = async (option) => {
     setLoading(true);
     try {
-      // Format the date for use in navigation
-      const formattedDate = selectedDate.toISOString();
-      const dateKey = selectedDate.toISOString().split('T')[0];
-      
-      // Store selection in local storage to be used by game
-      localStorage.setItem('playAgainDate', formattedDate);
-      localStorage.setItem('playAgainMode', option);
-      
-      // If unlimited mode is selected, also store it with the date as a key
-      // This will help us track which melodies were purchased for unlimited plays
-      if (option === 'unlimited') {
-        localStorage.setItem(`playAgainMode_${dateKey}`, 'unlimited');
-      }
-  
       // Process payment (placeholder for future)
       const paymentSuccess = await processPayment(option);
       
       if (paymentSuccess) {
-        // Navigate to the historical game route with query params
-        navigate(`/play-historical?replay=true&date=${encodeURIComponent(formattedDate)}&mode=${option}`);
+        goToHistoricalGame(selectedDate, option);
       } else {
         // Payment failed - would show error in paid implementation
         setLoading(false);
@@ -182,7 +233,11 @@ const PlayAgainPage = () => {
                 <h2 className="text-xl font-patrick text-writing mb-4">SELECT THE DAY YOU WANT TO REPLAY</h2>
                 
                 {/* Calendar Component */}
-                <ScoreHistory userId={user?.id} onDaySelect={handleDaySelect} />
+                <ScoreHistory 
+                  userId={user?.id} 
+                  onDaySelect={handleDaySelect} 
+                  ownedMelodies={ownedMelodies}
+                />
               </div>
             </div>
           </div>
@@ -211,50 +266,45 @@ const PlayAgainPage = () => {
               <h2 className="text-xl font-patrick text-writing">
                 Play {new Date(selectedDate).toLocaleDateString('en-US', {
                   weekday: 'long',
-                  month: 'long', 
+                  month: 'long',
                   day: 'numeric'
                 })}
               </h2>
-              
-              {/* Show different message based on whether day was played */}
+              {/* Show different message based on whether day was played and play status */}
               <div className="mt-2 px-3 py-1 bg-writing/10 rounded-lg">
                 <span className="font-patrick text-writing text-sm">
-                  {isPlayedDay 
-                    ? "Choose your play option" 
-                    : "You missed this melody - buy it now!"}
+                  {showOnlyUnlimited
+                    ? "You've already played this once. Purchase unlimited plays?"
+                    : isPlayedDay
+                      ? "Choose your play option"
+                      : "You missed this melody - buy it now!"}
                 </span>
               </div>
             </div>
             
             <div className="space-y-4 mb-6">
-              <button 
-                onClick={() => handlePlayOptionSelect('single')}
-                disabled={loading}
-                className="w-full bg-writing text-white rounded-lg py-3 font-patrick hover:bg-writing/90 transition-colors flex justify-between items-center"
-              >
-                <div className="flex items-center">
-                  <div className="bg-white/20 rounded-full w-8 h-8 flex items-center justify-center mr-3">
-                    <span className="font-patrick text-lg">1×</span>
-                  </div>
-                  <span>Play Once</span>
-                </div>
-                <span className="bg-white text-writing px-3 py-1 rounded font-bold">
-                  FREE
-                </span>
-              </button>
+              {!showOnlyUnlimited && (
+                <button
+                  onClick={() => handlePlayOptionSelect('single')}
+                  disabled={loading}
+                  className="w-full border-2 border-[#1174B9] bg-[#FFFDEE] text-[#1174B9] rounded-lg 
+                            py-3 font-patrick text-lg transition-colors hover:bg-[#1174B9] hover:text-white"
+                >
+                  Play Once
+                  <span className="ml-2 text-sm font-normal">
+                    FREE
+                  </span>
+                </button>
+              )}
               
-              <button 
+              <button
                 onClick={() => handlePlayOptionSelect('unlimited')}
                 disabled={loading}
-                className="w-full bg-special text-white rounded-lg py-3 font-patrick hover:bg-special/90 transition-colors flex justify-between items-center"
+                className="w-full border-2 border-[#AB08FF] bg-[#FFFDEE] text-[#AB08FF] rounded-lg 
+                          py-3 font-patrick text-lg transition-colors hover:bg-[#AB08FF] hover:text-white"
               >
-                <div className="flex items-center">
-                  <div className="bg-white/20 rounded-full w-8 h-8 flex items-center justify-center mr-3">
-                    <span className="font-patrick text-sm">∞</span>
-                  </div>
-                  <span>Unlimited Plays</span>
-                </div>
-                <span className="bg-white text-special px-3 py-1 rounded font-bold">
+                {showOnlyUnlimited ? 'Buy Unlimited Plays' : 'Unlimited Plays'}
+                <span className="ml-2 text-sm font-normal">
                   FREE
                 </span>
               </button>
@@ -262,7 +312,8 @@ const PlayAgainPage = () => {
             
             <button
               onClick={handleCloseOptions}
-              className="w-full border-2 border-writing text-writing rounded-lg py-2 font-patrick hover:bg-writing/10 transition-colors"
+              className="w-full border-2 border-writing text-writing rounded-lg py-2 
+                        font-patrick hover:bg-writing/10 transition-colors"
             >
               Cancel
             </button>

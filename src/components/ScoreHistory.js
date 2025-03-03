@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../services/supabase';
 import './ScoreHistory.css'; // Keep the CSS import
 
-const ScoreHistory = ({ userId, onDaySelect }) => {
+const ScoreHistory = ({ userId, onDaySelect, ownedMelodies = new Set() }) => {
   const [gameHistory, setGameHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -67,6 +67,7 @@ const ScoreHistory = ({ userId, onDaySelect }) => {
             return gameDateStr === dateStr;
           });
           
+          // For debugging
           if (dateStr === '2025-03-02') {
             console.log(`Scores for March 2:`, scoresForDay);
           }
@@ -74,7 +75,6 @@ const ScoreHistory = ({ userId, onDaySelect }) => {
           // Get best score for this day
           let bestScore = null;
     
-          
           if (scoresForDay && scoresForDay.length > 0) {
             // Find the score with the highest total
             bestScore = scoresForDay.reduce((best, game) => {
@@ -88,12 +88,16 @@ const ScoreHistory = ({ userId, onDaySelect }) => {
             }, { score: 0, barScores: [] });
           }
           
+          // Check if this melody is owned (has unlimited access)
+          const isOwned = ownedMelodies.has(dateStr);
+          
           // Add day to history
           filledHistory.push({
             date: dateStr,
             score: bestScore ? bestScore.score : null,
             bar_scores: bestScore ? bestScore.barScores : [],
             played: !!bestScore,
+            isOwned, // Add owned status
             month: currentMonth.getMonth(),
             year: currentMonth.getFullYear()
           });
@@ -102,6 +106,7 @@ const ScoreHistory = ({ userId, onDaySelect }) => {
         // Log final history size
         console.log(`Final filled history:`, filledHistory);
         console.log(`Games marked as played:`, filledHistory.filter(game => game.played).length);
+        console.log(`Games marked as owned:`, filledHistory.filter(game => game.isOwned).length);
         
         setGameHistory(filledHistory);
       } catch (error) {
@@ -132,7 +137,7 @@ const ScoreHistory = ({ userId, onDaySelect }) => {
     return () => {
       window.removeEventListener('focus', checkForRefresh);
     };
-  }, [userId, currentMonth]);
+  }, [userId, currentMonth, ownedMelodies]);
 
   // Updated handler for day selection that allows clicking on past days
   const handleDayClick = (game) => {
@@ -222,15 +227,25 @@ const ScoreHistory = ({ userId, onDaySelect }) => {
                 className={`calendar-day border-2 ${
                   onDaySelect
                     ? (game.played || new Date(game.date) < today)
-                      ? 'border-[#1174B9]/30 hover:border-[#1174B9] cursor-pointer transition-colors'
+                      ? game.isOwned 
+                        ? 'border-[#AB08FF]/30 hover:border-[#AB08FF] cursor-pointer transition-colors owned-melody'
+                        : 'border-[#1174B9]/30 hover:border-[#1174B9] cursor-pointer transition-colors'
                       : 'border-[#1174B9]/10'
                     : 'border-[#1174B9]/10'
                 } rounded-lg ${
                   game.played ? 'bg-[#FFFFF5]' : 'bg-[#FFFDEE]'
                 }`}
               >
-                <div className="text-xs text-[#1174B9] p-1">
-                  {gameDate.getDate()}
+                <div className="text-xs text-[#1174B9] p-1 flex items-center">
+                  <span>{gameDate.getDate()}</span>
+                  {game.isOwned && (
+                    <img 
+                      src="/assets/images/ui/purpleheart.svg" 
+                      alt="Owned" 
+                      className="owned-indicator ml-1"
+                      style={{ width: '10px', height: '10px' }}
+                    />
+                  )}
                 </div>
                 {game.played && game.bar_scores && (
                   <div className="calendar-hearts">
