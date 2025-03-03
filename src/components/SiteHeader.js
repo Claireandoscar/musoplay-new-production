@@ -5,7 +5,7 @@ import { supabase } from '../services/supabase';
 import { useAuth } from '../services/AuthContext';
 import { hasPlayedToday as checkIfPlayedToday } from '../Utils/gameUtils'; // Rename import
 
-const SiteHeader = ({ overrideStatus }) => {
+const SiteHeader = ({ overrideStatus = null }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
@@ -166,9 +166,6 @@ const SiteHeader = ({ overrideStatus }) => {
   );
 };
 
-// Set default props
-SiteHeader.defaultProps = {
-  overrideStatus: null
-};
+
 
 export default SiteHeader;

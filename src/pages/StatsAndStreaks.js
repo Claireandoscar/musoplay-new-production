@@ -294,7 +294,7 @@ const StatsAndStreaks = () => {
 
           {/* Calendar */}
           <div className="lg:w-1/2">
-            <MemoizedScoreHistory userId={user.id} />
+            <MemoizedScoreHistory userId={user.id} instanceId="stats-page-calendar" />
           </div>
         </div>
       </div>

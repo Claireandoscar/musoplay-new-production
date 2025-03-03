@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../services/supabase';
-import './ScoreHistory.css'; // Keep the CSS import
+import './ScoreHistory.css';
 
-const ScoreHistory = ({ userId, onDaySelect, ownedMelodies = new Set() }) => {
+const ScoreHistory = ({ userId, onDaySelect, ownedMelodies = new Set(), instanceId = 'default' }) => {
   const [gameHistory, setGameHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -20,19 +20,14 @@ const ScoreHistory = ({ userId, onDaySelect, ownedMelodies = new Set() }) => {
   useEffect(() => {
     const fetchGameHistory = async () => {
       try {
+        if (!userId) {
+          setLoading(false);
+          return;
+        }
+        
         console.log('Fetching game history for user:', userId);
         
-        // Set time to midnight UTC
-        const startOfMonth = new Date(Date.UTC(currentMonth.getFullYear(), currentMonth.getMonth(), 1));
-        const endOfMonth = new Date(Date.UTC(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0, 23, 59, 59, 999));
-        
-        console.log('Date range:', {
-          start: startOfMonth.toISOString(),
-          end: endOfMonth.toISOString(),
-          currentMonth: currentMonth.toISOString()
-        });
-        
-        // Use a simple query to get all scores for the user
+        // Get all scores for the user
         const { data: scores, error } = await supabase
           .from('game_scores')
           .select('*')
@@ -43,12 +38,17 @@ const ScoreHistory = ({ userId, onDaySelect, ownedMelodies = new Set() }) => {
         
         console.log('All scores fetched:', scores?.length || 0);
 
-        // Initialize array for all days in the month
-        const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
+        // Get days in the selected month
+        const year = currentMonth.getFullYear();
+        const month = currentMonth.getMonth();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        
+        // Create game history array
         const filledHistory = [];
         
         for (let day = 1; day <= daysInMonth; day++) {
-          const dateObj = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+          // Create a proper date object for this day
+          const dateObj = new Date(year, month, day);
           const dateStr = dateObj.toISOString().split('T')[0];
           
           // Find scores for this date
@@ -62,21 +62,16 @@ const ScoreHistory = ({ userId, onDaySelect, ownedMelodies = new Set() }) => {
               gameDate = new Date(game.played_at);
             }
             
-            // Convert to ISO date string and compare just the date part
+            // Compare just the date part (YYYY-MM-DD)
             const gameDateStr = gameDate.toISOString().split('T')[0];
             return gameDateStr === dateStr;
           });
-          
-          // For debugging
-          if (dateStr === '2025-03-02') {
-            console.log(`Scores for March 2:`, scoresForDay);
-          }
           
           // Get best score for this day
           let bestScore = null;
     
           if (scoresForDay && scoresForDay.length > 0) {
-            // Find the score with the highest total
+            // Find the highest score
             bestScore = scoresForDay.reduce((best, game) => {
               const gameScore = game.total_score || 
                 (Array.isArray(game.bar_scores) ? game.bar_scores.reduce((sum, hearts) => sum + hearts, 0) : 0);
@@ -88,7 +83,7 @@ const ScoreHistory = ({ userId, onDaySelect, ownedMelodies = new Set() }) => {
             }, { score: 0, barScores: [] });
           }
           
-          // Check if this melody is owned (has unlimited access)
+          // Check if this melody is owned
           const isOwned = ownedMelodies.has(dateStr);
           
           // Add day to history
@@ -97,16 +92,10 @@ const ScoreHistory = ({ userId, onDaySelect, ownedMelodies = new Set() }) => {
             score: bestScore ? bestScore.score : null,
             bar_scores: bestScore ? bestScore.barScores : [],
             played: !!bestScore,
-            isOwned, // Add owned status
-            month: currentMonth.getMonth(),
-            year: currentMonth.getFullYear()
+            isOwned,
+            day
           });
         }
-        
-        // Log final history size
-        console.log(`Final filled history:`, filledHistory);
-        console.log(`Games marked as played:`, filledHistory.filter(game => game.played).length);
-        console.log(`Games marked as owned:`, filledHistory.filter(game => game.isOwned).length);
         
         setGameHistory(filledHistory);
       } catch (error) {
@@ -116,43 +105,32 @@ const ScoreHistory = ({ userId, onDaySelect, ownedMelodies = new Set() }) => {
       }
     };
     
-    // Initial fetch
     fetchGameHistory();
     
-    // Add force refresh check
+    // Set up refresh check
     const checkForRefresh = () => {
-      const shouldRefresh = localStorage.getItem('forceCalendarRefresh') === 'true';
-      if (shouldRefresh) {
-        console.log('Force refreshing calendar data after historical game');
+      if (localStorage.getItem('forceCalendarRefresh') === 'true') {
+        console.log('Force refreshing calendar data');
         localStorage.removeItem('forceCalendarRefresh');
         fetchGameHistory();
       }
     };
     
-    // Check immediately and when window gets focus
     checkForRefresh();
     window.addEventListener('focus', checkForRefresh);
     
-    // Cleanup
     return () => {
       window.removeEventListener('focus', checkForRefresh);
     };
   }, [userId, currentMonth, ownedMelodies]);
 
-  // Updated handler for day selection that allows clicking on past days
   const handleDayClick = (game) => {
-    // If onDaySelect is provided (we're in the Play Again page)
     if (onDaySelect) {
-      // Get today's date at midnight for comparison
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
-      // Get the game date
       const gameDate = new Date(game.date);
       
-      // Allow selection if:
-      // 1. The day has a score (was previously played), OR
-      // 2. The day is in the past (user missed playing it)
       if (game.played || gameDate < today) {
         onDaySelect(new Date(game.date));
       }
@@ -163,13 +141,109 @@ const ScoreHistory = ({ userId, onDaySelect, ownedMelodies = new Set() }) => {
     return <div className="loading loading-spinner loading-lg"></div>;
   }
 
-  // Create today variable for comparison
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
-  // Calculate first day of the month and its day of the week (0-6, where 0 is Sunday)
-  const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
-  const firstDayWeekday = firstDayOfMonth.getDay();
+  // Generate calendar grid
+  const renderCalendar = () => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    
+    // First day of month (0 = Sunday, 1 = Monday, etc.)
+    const firstDay = new Date(year, month, 1).getDay();
+    
+    // Create week rows
+    const weeks = [];
+    let days = [];
+    
+    // Add empty cells for days before the 1st of the month
+    for (let i = 0; i < firstDay; i++) {
+      days.push(
+        <div 
+          key={`${instanceId}-empty-start-${i}`}
+          className="calendar-day border-2 border-[#1174B9]/10 rounded-lg"
+        />
+      );
+    }
+    
+    // Add days of the month
+    gameHistory.forEach(game => {
+      days.push(
+        <div
+          key={`${instanceId}-day-${game.day}`}
+          onClick={() => handleDayClick(game)}
+          className={`calendar-day border-2 ${
+            onDaySelect
+              ? (game.played || new Date(game.date) < today)
+                ? game.isOwned 
+                  ? 'border-[#AB08FF]/30 hover:border-[#AB08FF] cursor-pointer transition-colors owned-melody'
+                  : 'border-[#1174B9]/30 hover:border-[#1174B9] cursor-pointer transition-colors'
+                : 'border-[#1174B9]/10'
+              : 'border-[#1174B9]/10'
+          } rounded-lg ${
+            game.played ? 'bg-[#FFFFF5]' : 'bg-[#FFFDEE]'
+          }`}
+        >
+          <div className="text-xs text-[#1174B9] p-1 flex items-center">
+            <span>{game.day}</span>
+            {game.isOwned && (
+              <img 
+                src="/assets/images/ui/purpleheart.svg" 
+                alt="Owned" 
+                className="owned-indicator ml-1"
+                style={{ width: '10px', height: '10px' }}
+              />
+            )}
+          </div>
+          {game.played && game.bar_scores && (
+            <div className="calendar-hearts">
+              {game.bar_scores.map((hearts, barIndex) => (
+                <div key={`hearts-row-${game.day}-${barIndex}`} className="calendar-hearts-row">
+                  {[...Array(4)].map((_, i) => (
+                    <img
+                      key={`heart-${game.day}-${barIndex}-${i}`}
+                      src={`/assets/images/ui/${getHeartImage(game.date, i < hearts)}`}
+                      alt={i < hearts ? "Full Heart" : "Empty Heart"}
+                    />
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+      
+      // Start a new week after Saturday
+      if ((firstDay + game.day) % 7 === 0 || game.day === gameHistory.length) {
+        weeks.push(
+          <React.Fragment key={`${instanceId}-week-${weeks.length}`}>
+            {days}
+          </React.Fragment>
+        );
+        days = [];
+      }
+    });
+    
+    // Add remaining empty cells to complete the last week
+    if (days.length > 0) {
+      const remainingCells = 7 - days.length;
+      for (let i = 0; i < remainingCells; i++) {
+        days.push(
+          <div 
+            key={`${instanceId}-empty-end-${i}`}
+            className="calendar-day border-2 border-[#1174B9]/10 rounded-lg"
+          />
+        );
+      }
+      weeks.push(
+        <React.Fragment key={`${instanceId}-week-${weeks.length}`}>
+          {days}
+        </React.Fragment>
+      );
+    }
+    
+    return weeks;
+  };
 
   return (
     <div className="score-history-container card bg-[#FFFFF5] shadow-xl mb-6 border-2 border-[#1174B9]/30 rounded-lg max-w-full">
@@ -204,67 +278,13 @@ const ScoreHistory = ({ userId, onDaySelect, ownedMelodies = new Set() }) => {
         <div className="calendar-grid">
           {/* Day headings */}
           {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
-            <div key={`heading-${index}`} className="text-center font-['Patrick_Hand_SC'] text-[#1174B9]">
+            <div key={`${instanceId}-heading-${index}`} className="text-center font-['Patrick_Hand_SC'] text-[#1174B9]">
               {day}
             </div>
           ))}
           
-          {/* Empty days at start of month - with unique keys */}
-          {[...Array(firstDayWeekday)].map((_, i) => (
-            <div
-              key={`empty-start-${currentMonth.getMonth()}-${currentMonth.getFullYear()}-${i}`}
-              className="calendar-day border-2 border-[#1174B9]/10 rounded-lg"
-            />
-          ))}
-          
-          {/* Actual days of the month - with month and year in key to ensure uniqueness */}
-          {gameHistory.map((game) => {
-            const gameDate = new Date(game.date);
-            return (
-              <div
-                key={`day-${gameDate.getMonth()}-${gameDate.getFullYear()}-${gameDate.getDate()}`}
-                onClick={() => handleDayClick(game)}
-                className={`calendar-day border-2 ${
-                  onDaySelect
-                    ? (game.played || new Date(game.date) < today)
-                      ? game.isOwned 
-                        ? 'border-[#AB08FF]/30 hover:border-[#AB08FF] cursor-pointer transition-colors owned-melody'
-                        : 'border-[#1174B9]/30 hover:border-[#1174B9] cursor-pointer transition-colors'
-                      : 'border-[#1174B9]/10'
-                    : 'border-[#1174B9]/10'
-                } rounded-lg ${
-                  game.played ? 'bg-[#FFFFF5]' : 'bg-[#FFFDEE]'
-                }`}
-              >
-                <div className="text-xs text-[#1174B9] p-1 flex items-center">
-                  <span>{gameDate.getDate()}</span>
-                  {game.isOwned && (
-                    <img 
-                      src="/assets/images/ui/purpleheart.svg" 
-                      alt="Owned" 
-                      className="owned-indicator ml-1"
-                      style={{ width: '10px', height: '10px' }}
-                    />
-                  )}
-                </div>
-                {game.played && game.bar_scores && (
-                  <div className="calendar-hearts">
-                    {game.bar_scores.map((hearts, barIndex) => (
-                      <div key={`hearts-row-${gameDate.getDate()}-${barIndex}`} className="calendar-hearts-row">
-                        {[...Array(4)].map((_, i) => (
-                          <img
-                            key={`heart-${gameDate.getDate()}-${barIndex}-${i}`}
-                            src={`/assets/images/ui/${getHeartImage(game.date, i < hearts)}`}
-                            alt={i < hearts ? "Full Heart" : "Empty Heart"}
-                          />
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+          {/* Calendar days */}
+          {renderCalendar()}
         </div>
         
         {onDaySelect && (
