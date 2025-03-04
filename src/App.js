@@ -13,6 +13,7 @@ import ProfilePage from './pages/ProfilePage';
 import PlayAgainPage from './pages/PlayAgainPage.js';
 // Import the HistoricalGame component
 import HistoricalGame from './historical_game/HistoricalGame';
+import LeaderboardPage from './pages/LeaderboardPage';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -85,9 +86,7 @@ function App() {
                 path="/leaderboard" 
                 element={
                   <ProtectedRoute>
-                    <div className="min-h-[100dvh] w-full flex items-center justify-center font-patrick text-[#1174B9]">
-                      <p>Leaderboard Coming Soon</p>
-                    </div>
+                    <LeaderboardPage />
                   </ProtectedRoute>
                 } 
               />

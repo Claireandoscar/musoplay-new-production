@@ -167,6 +167,12 @@ function GameApp() {
   const [currentBarIndex, setCurrentBarIndex] = useState(0);
   const { showInstructions, setShowInstructions } = useGame();
 
+  const [gameTimer, setGameTimer] = useState({
+    startTime: null,
+    elapsedTime: 0,
+    isRunning: false
+  });
+
 
   // Sequence and completion tracking
   const [correctSequence, setCorrectSequence] = useState([]);
@@ -186,48 +192,54 @@ function GameApp() {
     { id: 8, color: 'red', noteNumber: 8 },
   ];
 
-// Replace your current handleStartGame with this version
-const handleStartGame = useCallback(async () => {   
-  console.log('handleStartGame called');    
-  if (!isPreloading && isAudioLoaded) {
-    setShowInstructions(false);
-    console.log('Conditions passed, starting game');
-    
-    try {
-      // Initialize audio
-      const audioState = audioEngine.getAudioContextState();
-      if (audioState.state === 'suspended') {
-        await audioEngine.audioContext.resume();
-      }
-      console.log('Audio context initialized');
-
-      // Update instructions state
+  const handleStartGame = useCallback(async () => {   
+    console.log('handleStartGame called');    
+    if (!isPreloading && isAudioLoaded) {
       setShowInstructions(false);
-
-      // Initialize game state
-      setGameMode('initial');
-      dispatch({ type: 'SET_GAME_PHASE', payload: 'initial' });
-      dispatch({ type: 'UPDATE_NOTE_INDEX', payload: 0 });
-      dispatch({ type: 'RESET_BAR_HEARTS' });
-      dispatch({ type: 'RESET_COMPLETED_BARS' });
-      dispatch({ type: 'SET_BAR_FAILING', failing: false });
+      console.log('Conditions passed, starting game');
       
-      // Reset game progress
-      setScore(0);
-      setCurrentBarIndex(0);
-      setIsGameComplete(false);
-      setIsGameEnded(false);
-      setShowEndAnimation(false);
-      setIsListenPracticeMode(false);
-    } catch (error) {
-      console.error('Game initialization error:', error);
+      try {
+        // Initialize the timer
+        setGameTimer({
+          startTime: Date.now(),
+          elapsedTime: 0,
+          isRunning: true
+        });
+        
+        // Initialize audio
+        const audioState = audioEngine.getAudioContextState();
+        if (audioState.state === 'suspended') {
+          await audioEngine.audioContext.resume();
+        }
+        console.log('Audio context initialized');
+  
+        // Update instructions state
+        setShowInstructions(false);
+  
+        // Initialize game state
+        setGameMode('initial');
+        dispatch({ type: 'SET_GAME_PHASE', payload: 'initial' });
+        dispatch({ type: 'UPDATE_NOTE_INDEX', payload: 0 });
+        dispatch({ type: 'RESET_BAR_HEARTS' });
+        dispatch({ type: 'RESET_COMPLETED_BARS' });
+        dispatch({ type: 'SET_BAR_FAILING', failing: false });
+        
+        // Reset game progress
+        setScore(0);
+        setCurrentBarIndex(0);
+        setIsGameComplete(false);
+        setIsGameEnded(false);
+        setShowEndAnimation(false);
+        setIsListenPracticeMode(false);
+      } catch (error) {
+        console.error('Game initialization error:', error);
+      }
+    } else {
+      console.log('Game not starting because:', { isPreloading, isAudioLoaded });
     }
-  } else {
-    console.log('Game not starting because:', { isPreloading, isAudioLoaded });
-  }
-}, [isPreloading, isAudioLoaded, dispatch, setGameMode, 
-  setScore, setCurrentBarIndex, setIsGameComplete, setIsGameEnded, 
-  setShowEndAnimation, setIsListenPracticeMode, setShowInstructions]);
+  }, [isPreloading, isAudioLoaded, dispatch, setGameMode, 
+    setScore, setCurrentBarIndex, setIsGameComplete, setIsGameEnded, 
+    setShowEndAnimation, setIsListenPracticeMode, setShowInstructions]);
 useEffect(() => {
   const checkAuth = async () => {
     const { data: { user }, error } = await supabase.auth.getUser();
@@ -419,6 +431,36 @@ useEffect(() => {
         console.error('Failed to play melody:', error);
     }
 }, [currentBarIndex, dispatch, isAudioLoaded]);
+
+useEffect(() => {
+  const handleVisibilityChange = () => {
+    if (document.hidden) {
+      // User left the page - pause the timer
+      if (gameTimer.isRunning) {
+        const now = Date.now();
+        const newElapsedTime = gameTimer.elapsedTime + (now - gameTimer.startTime);
+        setGameTimer(prev => ({
+          ...prev,
+          elapsedTime: newElapsedTime,
+          isRunning: false
+        }));
+      }
+    } else {
+      // User returned to the page - resume the timer if it was running
+      if (gameState.gamePhase === 'practice' || gameState.gamePhase === 'perform') {
+        setGameTimer(prev => ({
+          ...prev,
+          startTime: Date.now(),
+          isRunning: true
+        }));
+      }
+    }
+  };
+
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+  return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+}, [gameTimer, gameState.gamePhase]);
+
 // Updated perform mode handler
 const handlePerform = useCallback(async () => {
   if (gameState.gamePhase === 'perform') {
@@ -537,12 +579,37 @@ const moveToNextBar = useCallback((isSuccess = true) => {
     melodyAudio.currentTime = 0;
   }
   const handleGameEnd = async () => {
+    // Calculate final elapsed time with a reasonable fallback
+    let totalTimeSeconds = 0;
+    
+    if (gameTimer.startTime) {
+      // Normal case - we have timing data
+      if (gameTimer.isRunning) {
+        const now = Date.now();
+        totalTimeSeconds = Math.floor((gameTimer.elapsedTime + (now - gameTimer.startTime)) / 1000);
+      } else {
+        totalTimeSeconds = Math.floor(gameTimer.elapsedTime / 1000);
+      }
+    } else {
+      // Fallback case - we don't have timing data
+      // Use a reasonable estimate: 30 seconds per bar
+      totalTimeSeconds = 30 * 4; // 4 bars * 30 seconds
+      console.warn('Using fallback completion time of 120 seconds');
+    }
+    
+    // Stop the timer
+    setGameTimer(prev => ({
+      ...prev,
+      isRunning: false
+    }));
+    
     console.log('handleGameEnd triggered', {
       score,
       barHearts: gameState.barHearts,
-      user: user?.id
+      user: user?.id,
+      completionTime: totalTimeSeconds
     });
-    console.log('Game ending with score:', score);
+    console.log('Game ending with score:', score, 'completion time:', totalTimeSeconds, 'seconds');
     
     // Record game completion in localStorage
     const today = new Date().toISOString().split('T')[0];
@@ -550,16 +617,38 @@ const moveToNextBar = useCallback((isSuccess = true) => {
     localStorage.setItem('gameCompletedDate', today);
     localStorage.setItem('lastGameScore', score.toString());
     localStorage.setItem('lastGameHearts', JSON.stringify(gameState.barHearts));
+    localStorage.setItem('lastGameCompletionTime', totalTimeSeconds.toString());
     
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       console.log('Auth check:', { user, authError });
       
       if (user) {
-        // Record in game_scores table
+        // Get user's profile data for the leaderboard
+        const { data: profileData } = await supabase
+          .from('user_profiles')
+          .select('username, avatar_url')
+          .eq('id', user.id)
+          .single();
+        
+        // Record in game_scores table with completion time
+        await supabase
+          .from('game_scores')
+          .insert({
+            user_id: user.id,
+            total_score: score,
+            bar_scores: gameState.barHearts,
+            completion_time: totalTimeSeconds,
+            username: profileData?.username,
+            avatar_url: profileData?.avatar_url,
+            played_at: new Date().toISOString()
+          });
+        
+        // Also use the ScoreService if that's your preferred approach
+        // Modify this call if you've updated ScoreService to accept completion time
         await ScoreService.recordGameScore(user.id, gameState.barHearts);
         
-        // Set the flag to force calendar refresh - THIS IS THE KEY ADDITION
+        // Set the flag to force calendar refresh
         localStorage.setItem('forceCalendarRefresh', 'true');
         
         // First try to get current stats
@@ -676,7 +765,16 @@ const moveToNextBar = useCallback((isSuccess = true) => {
   user?.id 
 ]);
 // eslint-disable-next-line no-unused-vars
-const handleGameReset = () => {
+// eslint-disable-next-line no-unused-vars
+// In GameApp.js
+const handleGameReset = useCallback(() => {
+  // Reset timer state
+  setGameTimer({
+    startTime: Date.now(),
+    elapsedTime: 0,
+    isRunning: true
+  });
+  
   // Just pause and reset position
   if (melodyAudio) {
     melodyAudio.pause();
@@ -699,7 +797,7 @@ const handleGameReset = () => {
   dispatch({ type: 'RESET_BAR_HEARTS' });
   dispatch({ type: 'RESET_COMPLETED_BARS' });
   setIsListenPracticeMode(false);
-};
+}, [gameTimer.elapsedTime, gameTimer.isRunning, gameTimer.startTime]); // Add these dependencies
 const handleNotePlay = useCallback(async (noteNumber) => {
   console.log('handleNotePlay called with note:', noteNumber);
 
